@@ -1,5 +1,7 @@
 import cv2 as cv
 import matplotlib.pyplot as plt
+
+from typing import List, Tuple
 # vonsider making this a class
 
 
@@ -70,7 +72,36 @@ def detect_key_points_stif(image:cv.Mat):
 
 
 
-    return None
+def embed_watermarks(carrier_img:cv.Mat, watermark:List, key_points:cv.KeyPoint, segment_size:int=5)->cv.Mat:
+
+    carrier_img_copy = carrier_img.copy()
+
+    # for one keypint now
+    x_keypoints, y_keypoints = int(round(key_points.pt[0])), int(round(key_points.pt[1]))
+
+    half_sgement=segment_size//2 #to capture the square around the keypoints
+
+    if x_keypoints-half_sgement<0 or y_keypoints-half_sgement<0 or x_keypoints+half_sgement>=carrier_img_copy.shape[0] or y_keypoints+half_sgement>=carrier_img_copy.shape[1]:
+        print("try smaller segment size or watermark, skipping this segment")
+        return carrier_img_copy
+    
+
+    for dy in range(-half_sgement,half_sgement+1):
+        for dx in range(-half_sgement, half_sgement+1):
+            x = x_keypoints+dx
+            y= y_keypoints+dy
+            bit = 0
+
+            if watermark[dy+half_sgement,dx+half_sgement]>0:
+                bit = 1
+            original_pixel = carrier_img_copy[y, x]
+            carrier_img_copy[y,x]  = (original_pixel & ~1) | bit
+    
+
+    return carrier_img_copy
+
+
+
 if __name__ == "__main__":
     carr = _fetch_carrier_image()
     watermark = _fetch_watermark_image(image_path="images/watermark_A_5x5.png")
