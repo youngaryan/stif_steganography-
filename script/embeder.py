@@ -1,7 +1,7 @@
 import cv2 as cv
-import matplotlib.pyplot as plt
-
 from typing import List, Tuple
+
+from utilis import show_image
 # vonsider making this a class
 
 
@@ -62,11 +62,6 @@ def detect_key_points_stif(image:cv.Mat):
         flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS
     )
 
-    # Display the image
-    plt.imshow(image_with_keypoints, cmap='gray')
-    plt.title('SIFT Keypoints')
-    plt.axis('off')
-    plt.show()
 
     return key_points, descripts
 
@@ -77,7 +72,7 @@ def embed_watermarks(carrier_img:cv.Mat, watermark:List, key_points:cv.KeyPoint,
     carrier_img_copy = carrier_img.copy()
 
     # for one keypint now
-    x_keypoints, y_keypoints = int(round(key_points.pt[0])), int(round(key_points.pt[1]))
+    x_keypoints, y_keypoints = int(round(key_points[0].pt[0])), int(round(key_points[1].pt[1]))
 
     half_sgement=segment_size//2 #to capture the square around the keypoints
 
@@ -105,7 +100,12 @@ def embed_watermarks(carrier_img:cv.Mat, watermark:List, key_points:cv.KeyPoint,
 if __name__ == "__main__":
     carr = _fetch_carrier_image()
     watermark = _fetch_watermark_image(image_path="images/watermark_A_5x5.png")
-
+    show_image(carr, title="original image")
     keypoints, _ = detect_key_points_stif(carr)
 
-    detect_key_points_stif(watermark)
+
+    ## need to fix it so it can take more thean one 5x5 segemnt
+    carr_midfied = embed_watermarks(carrier_img=carr,watermark=watermark[0],key_points=keypoints, segment_size=5)
+    show_image(carr_midfied, title="watermarked image")
+
+
