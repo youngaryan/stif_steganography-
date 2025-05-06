@@ -1,7 +1,23 @@
 import cv2 as cv
 import matplotlib.pyplot as plt
+# vonsider making this a class
 
 
+def _preprocess_water_mark(watermark:cv.Mat, segment_size:int = 5,)->cv.Mat:
+    """break down the watermark to smaller segements so it can be embeded in the carrier image"""
+    # proccessed_watermark = cv.resizeWindow:
+    hight, width = watermark.shape[:2]
+    segments = []
+
+    h_crop, w_crop = hight//segment_size, width//segment_size
+
+    for col in range(0, h_crop, segment_size):
+        for row in range(0, w_crop,segment_size):
+            segment = watermark[col:col+segment_size, row:row+segment_size]
+            segments.append(segment)
+
+
+    return segments
 
 def _fetch_carrier_image(image_path:str="images/che.png") -> cv.Mat:
     """
@@ -19,13 +35,19 @@ def _fetch_carrier_image(image_path:str="images/che.png") -> cv.Mat:
     return carrier_image
 
 
-def _fetch_watermark_image(image_path:str="images/watermark.png"):
+def _fetch_watermark_image(image_path:str="images/watermark.png", preprocess:bool=True, segment_size=5):
 
     watermark = cv.imread(image_path,cv.IMREAD_GRAYSCALE)
 
     if watermark is None:
         raise FileNotFoundError(f"Watermark image not found at ~/{image_path}.")
     
+
+    if preprocess:
+        watermark = _preprocess_water_mark(watermark, segment_size=segment_size)
+        return watermark
+
+
     return watermark
 
 def detect_key_points_stif(image:cv.Mat):
@@ -47,9 +69,7 @@ def detect_key_points_stif(image:cv.Mat):
     return key_points, descripts
 
 
-def preprocess_water_mark(watermark:cv.Mat, patch_size:int = 5, keypoints_size:int=1000)->cv.Mat:
-    
-    # proccessed_watermark = cv.resizeWindow:
+
     return None
 if __name__ == "__main__":
     carr = _fetch_carrier_image()
@@ -57,5 +77,4 @@ if __name__ == "__main__":
 
     keypoints, _ = detect_key_points_stif(carr)
 
-    processed_watermark = preprocess_water_mark(watermark, patch_size=5, keypoints_size=len(keypoints))
     detect_key_points_stif(watermark)
