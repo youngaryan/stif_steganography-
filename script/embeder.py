@@ -81,7 +81,7 @@ def embed_watermarks(carrier_img:cv.Mat, watermark:List, key_points:cv.KeyPoint,
 
     half_sgement=segment_size//2 #to capture the square around the keypoints
 
-    if x_keypoints-half_sgement<0 or y_keypoints-half_sgement<0 or x_keypoints+half_sgement>=carrier_img_copy.shape[0] or y_keypoints+half_sgement>=carrier_img_copy.shape[1]:
+    if x_keypoints-half_sgement<0 or y_keypoints-half_sgement<0 or x_keypoints+half_sgement>=carrier_img_copy.shape[1] or y_keypoints+half_sgement>=carrier_img_copy.shape[0]:
         print("try smaller segment size or watermark, skipping this segment")
         return carrier_img_copy
     
