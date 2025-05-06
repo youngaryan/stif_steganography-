@@ -1,17 +1,22 @@
 import cv2 as cv
+import numpy as np
 from typing import List, Tuple
 
 from utilis import show_image
 
 class WatermarkEmbedder:
     def __init__(self, carrier_image_path:str="images/che.png", watermark_image_path:str="images/watermark.png", segment_size:int=5):
-        self.carrier_image_path=carrier_image_path
-        self.watermark_image_path=watermark_image_path
-        self.segment_size=segment_size
-        self.carrier_image=self._fetch_carrier_image()
-        self.watermark_image_list=self._fetch_watermark_image(process=True)
-        self.watermark_image = self._fetch_watermark_image(process=False)
-        self.carrier_image_keypoints=self.detect_key_points_stif()
+        self.carrier_image_path:str=carrier_image_path
+        self.watermark_image_path:str=watermark_image_path
+        self.segment_size:int=segment_size if segment_size%2!=0 else segment_size+1 # to make sure there is a center pixel
+
+        self.carrier_image:cv.Mat=self._fetch_carrier_image()
+        self.watermark_image, self.watermark_image_list=self._fetch_watermark_image()
+        
+        self.carrier_image_keypoints:Tuple[cv.KeyPoint]=self.detect_key_points_stif()
+        self.used_keypoints:List[cv.KeyPoint] = []
+
+        self.modified_carrier_image:cv.Mat=self.embed_watermarks()
         
     def _fetch_carrier_image(self,) -> cv.Mat:
         """
@@ -28,58 +33,66 @@ class WatermarkEmbedder:
         
         return carrier_image
         
-        
-    def _fetch_watermark_image(self,process:bool=True)->List[cv.Mat]:
-
+    #TODO : add return type for this function
+    def _fetch_watermark_image(self,):
+        '''returns two values, the watermarks image and a list '''
         watermark = cv.imread(self.watermark_image_path,cv.IMREAD_GRAYSCALE)
 
         if watermark is None:
             raise FileNotFoundError(f"Watermark image not found at ~/{self.watermark_image_path}.")
-        
-        if not process:
-            return watermark
+
 
         hight, width = watermark.shape[:2]
-        segments = []
+        
         # check if the image too small for the segmant size
         if hight<self.segment_size or width <self.segment_size:
             raise ValueError(f"""watermark image is too small for the segment size {self.segment_size}.
                              the watermark image size is {hight}x{width}""")
 
-        h_crop, w_crop = hight//self.segment_size, width//self.segment_size
-
-        for col in range(0, h_crop, self.segment_size):
-            for row in range(0, w_crop,self.segment_size):
+        segments:List[np.ndarray] = []
+        for col in range(0, hight - self.segment_size + 1, self.segment_size):
+            for row in range(0, width - self.segment_size + 1 ,self.segment_size):
                 segment = watermark[col:col+self.segment_size, row:row+self.segment_size]
                 segments.append(segment)
 
 
-        return segments
+        return watermark, segments
     
 
     def detect_key_points_stif(self,)->Tuple[cv.KeyPoint]:
         stif= cv.SIFT_create()
         key_points, _ = stif.detectAndCompute(self.carrier_image, None)
 
+        # need to fix the order of the jeypoint as they are being returned arbitrarily
+        key_points = list(key_points) # so can be sort easier
+
+        ## needs to sort from top to bottm y and left to right for simmilar y values
+        key_points.sort(key=lambda key_pint:(int(round(key_pint.pt[1])), int(round(key_pint.pt[0]))))
+
         return key_points
     
     def embed_watermarks(self,)->cv.Mat:
-
         carrier_img_copy = self.carrier_image.copy()
 
         # for one keypint now
 
         half_sgement=self.segment_size//2 #to capture the square around the keypoints
+        height,width = carrier_img_copy.shape[:2]
 
+        if len(self.watermark_image_list) > len(self.carrier_image_keypoints):
+            print(f"Warn:watermark has {len(self.watermark_image_list)} segements, however the carrier image has only { len(self.carrier_image_keypoints)} keypoints, dome segments will not be embeded, this will cause to loose at least {len(self.watermark_image_list)-len(self.carrier_image_keypoints)} segments")
 
         
         for waterwork_segment, keypoint in zip(self.watermark_image_list, self.carrier_image_keypoints):
 
             x_keypoint, y_keypoint = int(round(keypoint.pt[0])), int(round(keypoint.pt[1]))
 
-            if x_keypoint-half_sgement<0 or y_keypoint-half_sgement<0 or x_keypoint+half_sgement>=carrier_img_copy.shape[1] or y_keypoint+half_sgement>=carrier_img_copy.shape[0]:
-                print("try smaller segment size or watermark, skipping this segment")
+            if x_keypoint-half_sgement<0 or y_keypoint-half_sgement<0 or x_keypoint+half_sgement>=width or y_keypoint+half_sgement>=height:
+                print("Warn:try smaller segment size, skipping this segment")
                 continue
+            
+            ##adding used keypoints to the list
+            self.used_keypoints.append(keypoint)
 
             for dy in range(-half_sgement,half_sgement+1):
                 for dx in range(-half_sgement, half_sgement+1):
@@ -95,10 +108,69 @@ class WatermarkEmbedder:
 
         return carrier_img_copy
     
+    def reconstruct_full_watermark(self, segments: List[np.ndarray]) -> np.ndarray:
+        """
+        Reconstruct the full watermark image from extracted segments.
+        Assumes segments were extracted in row-major order.
+        """
+        
+        height, width=self.watermark_image.shape[:2]
+        height_segment,width_segment= height//self.segment_size, width//self.segment_size
+        total_used_segments = width_segment * height_segment
+
+        frame = np.zeros((height,width))
+
+        for index, segment in enumerate(segments):
+            row_idx = index // width_segment
+            col_idx = index % width_segment
+
+
+            if row_idx >= height_segment or col_idx >= width_segment:
+                break
+
+            y_start  = row_idx*self.segment_size
+            x_start = col_idx*self.segment_size
+
+            frame[y_start:y_start+self.segment_size, x_start:x_start+self.segment_size]=segment
+
+        print(f"total used segments: {total_used_segments}, and total recovered segments: {len(segments)}")
+
+        return frame
+    
+    def extract_watermark(self,)->cv.Mat:
+        if self.used_keypoints == []:
+            raise RuntimeError("no keypoints has been used, there is nothing to extract")
+        
+        extracted_waterwork:List[np.ndarray] = []
+        half_segment=self.segment_size//2
+
+        for keypoint in self.used_keypoints:
+            x_keypoint, y_keypoint = int(round(keypoint.pt[0])), int(round(keypoint.pt[1]))
+
+            segment = np.zeros((self.segment_size, self.segment_size), dtype=np.uint8)
+            for dy in range(-half_segment,half_segment+1):
+                for dx in range(-half_segment, half_segment+1):
+                    x = x_keypoint+dx
+                    y= y_keypoint+dy
+                    
+                    pixel = self.modified_carrier_image[y, x]
+
+                    bit =pixel&1
+                    segment[dy + half_segment, dx + half_segment] =0
+
+                    if bit!=0:
+                        segment[dy + half_segment, dx + half_segment] = 255
+
+            extracted_waterwork.append(segment)
+            
+
+        return extracted_waterwork
+
+    
     def show_image(self, image_type:int=0):
         """
         show the image using OpenCV.
-        :param image_type: 0 for carrier image, 1 for watermark image, 2 for modifed carrier image, 3 for carrier image with keypoints.
+        :param image_type: 0 for carrier image, 1 for watermark image, 2 for modifed carrier image, 3 for carrier image with keypoints, 4 for extracted waterwork.
         :param title: Title of the window.
         """
         if image_type == 0:
@@ -106,7 +178,7 @@ class WatermarkEmbedder:
         elif image_type == 1:
             show_image(self.watermark_image,title="waterwork image" )
         elif image_type == 2:
-            show_image(self.embed_watermarks(),title="watermarked image(modified carrier image)")
+            show_image(self.modified_carrier_image,title="watermarked image(modified carrier image)")
         elif image_type == 3:
             image_with_keypoints = cv.drawKeypoints(
             self.carrier_image, self.carrier_image_keypoints, None,
@@ -114,6 +186,10 @@ class WatermarkEmbedder:
             )
 
             show_image(image_with_keypoints, title="Carrier image with keypoints")
+        elif image_type==4:
+            extracted_watermark = self.extract_watermark()
+            full_watermark = self.reconstruct_full_watermark(extracted_watermark)
+            show_image(full_watermark, title="Reconstructed Full Watermark")
         else:
             raise ValueError("Invalid image type. Use 0 for carrier image or 1 for watermark image.")
         
