@@ -28,7 +28,8 @@ class WatermarkEmbedder:
         self.modified_carrier_image_rotated = self._rotate_carrier_image(self.carrier_rotate_angle)
         # scale the modified carrier image
         self.modified_carrier_image_scaled:cv.Mat = self._scale_img(self.modified_carrier_image, self.carrier_scale_x, self.carrier_scale_y)
-           
+        # crop the modified image
+        self.modified_carrier_image_cropped:cv.Mat =self._crop_img(self.modified_carrier_image, carrier_crop)
         
     def _fetch_carrier_image(self,) -> cv.Mat:
         """
@@ -194,8 +195,21 @@ class WatermarkEmbedder:
     def _scale_img(self, img:cv.Mat, scale_x:float = 3.0, scale_y:float = 3.0)->cv.Mat:
         return cv.resize(img, None, fx=scale_x, fy=scale_y, interpolation=cv.INTER_LINEAR)
 
+    def _crop_img(self, img, carrier_crop):
 
-
+        hieght  ,width = self.modified_carrier_image.shape[:2]
+        if carrier_crop:
+            x1,x2,y1,y2 = carrier_crop
+        else:
+            crop_w = int(width* 0.6)
+            crop_h = int(hieght *0.6)
+            x1 = (width- crop_w)//2 
+            y1 = (hieght -crop_h)//2 
+            x2 = x1+crop_w
+            y2 = y1 +crop_h
+        x1, y1 = max(0, x1), max(0, y1)
+        x2, y2 = min(width, x2), min(hieght, y2)
+        return self.modified_carrier_image[y1:y2, x1:x2]
     def show_image(self, image_type:int=0):
         """
         show the image using OpenCV.
@@ -203,7 +217,9 @@ class WatermarkEmbedder:
         5, for rotated version of the carrier image, 
         6 for extracted waterwork for rotated carrier image
         7, scaled modefied carried
-        8, extracted watermark from scaled carrier
+        8, extracted watermark from scaled carrier,
+        9, show cropped carried modeifd image,
+        10, shows extracted watermark img from cropped image
         :param title: Title of the window.
         """
         if image_type == 0:
@@ -233,6 +249,12 @@ class WatermarkEmbedder:
             show_image(self.modified_carrier_image_scaled, "scaled carrier img")
         elif image_type==8:
             extracted_watermark = self.extract_watermark(self.modified_carrier_image_scaled)
+            full_watermark = self.reconstruct_full_watermark(extracted_watermark)
+            show_image(full_watermark, title="Reconstructed Full Watermark from scaled Carrier Image")
+        elif image_type==9:
+            show_image(self.modified_carrier_image_cropped, "scaled carrier img")
+        elif image_type==10:
+            extracted_watermark = self.extract_watermark(self.modified_carrier_image_cropped)
             full_watermark = self.reconstruct_full_watermark(extracted_watermark)
             show_image(full_watermark, title="Reconstructed Full Watermark from scaled Carrier Image")
         else:

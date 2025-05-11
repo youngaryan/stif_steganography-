@@ -14,11 +14,15 @@ if __name__ =="__main__":
     # embedder.show_image(6) #watermarked image(modified rotated carrier image)
 
 
-    embedder.show_image(7) #scaled imge
-    embedder.show_image(8)
+    # embedder.show_image(7) #scaled imge
+    # embedder.show_image(8)
 
+    embedder.show_image(9) #cropped imge
+    embedder.show_image(10)
 
     print(embedder.varify_watermark(img=embedder.modified_carrier_image_rotated))
     print(embedder.varify_watermark(img=embedder.modified_carrier_image_scaled))
-
+    print(embedder.varify_watermark(img=embedder.modified_carrier_image_cropped))
+    
+    
     print(embedder.varify_watermark(img=embedder.modified_carrier_image))
