@@ -195,3 +195,10 @@ class WatermarkEmbedder:
         
         cv.waitKey(0)
         cv.destroyAllWindows()
+
+    def varify_watermark(self,)->bool:
+            extracted_watermark= self.extract_watermark()
+            reconstructed_watermark =self.reconstruct_full_watermark(extracted_watermark) 
+            
+            
+            return np.array_equal(reconstructed_watermark, self.watermark_image) 
