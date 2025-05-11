@@ -118,7 +118,7 @@ class WatermarkEmbedder:
         height_segment,width_segment= height//self.segment_size, width//self.segment_size
         total_used_segments = width_segment * height_segment
 
-        frame = np.zeros((height,width))
+        frame = np.zeros((height,width), dtype=np.uint8)
 
         for index, segment in enumerate(segments):
             row_idx = index // width_segment
