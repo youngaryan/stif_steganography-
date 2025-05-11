@@ -6,7 +6,7 @@ from utilis import show_image
 
 class WatermarkEmbedder:
     def __init__(self, carrier_image_path:str="images/che.png", watermark_image_path:str="images/watermark.png", segment_size:int=5, 
-                 carrier_rotate_angle:int=90, carrier_scale:float= 0.5, carrier_crop: Tuple[int,int,int,int]=None):
+                 carrier_rotate_angle:int=1, carrier_scale:float= 0.5, carrier_crop: Tuple[int,int,int,int]=None):
         self.carrier_image_path:str=carrier_image_path
         self.watermark_image_path:str=watermark_image_path
         self.carrier_rotate_angle:int=carrier_rotate_angle
@@ -175,8 +175,8 @@ class WatermarkEmbedder:
         return extracted_waterwork
 
 
-    def varify_watermark(self,)->bool:
-            extracted_watermark= self.extract_watermark(self.carrier_image)
+    def varify_watermark(self,img:cv.Mat)->bool:
+            extracted_watermark= self.extract_watermark(img)
             reconstructed_watermark =self.reconstruct_full_watermark(extracted_watermark) 
             
 
