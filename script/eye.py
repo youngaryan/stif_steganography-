@@ -10,5 +10,6 @@ if __name__ =="__main__":
     embedder.show_image(2) #watermarked image(modified carrier image)
     # embedder.show_image(3) # Carrier image with keypoints
     embedder.show_image(4)
+    embedder.show_image(5) #Rotated Carrier Image
 
     print(embedder.varify_watermark())

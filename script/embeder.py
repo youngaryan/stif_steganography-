@@ -5,9 +5,13 @@ from typing import List, Tuple
 from utilis import show_image
 
 class WatermarkEmbedder:
-    def __init__(self, carrier_image_path:str="images/che.png", watermark_image_path:str="images/watermark.png", segment_size:int=5):
+    def __init__(self, carrier_image_path:str="images/che.png", watermark_image_path:str="images/watermark.png", segment_size:int=5, 
+                 carrier_rotate_angle:int=90, carrier_scale:float= 0.5, carrier_crop: Tuple[int,int,int,int]=None):
         self.carrier_image_path:str=carrier_image_path
         self.watermark_image_path:str=watermark_image_path
+        self.carrier_rotate_angle:int=carrier_rotate_angle
+        self.carrier_scale:float=carrier_scale
+        self.carrier_crop:Tuple[int,int,int,int]=carrier_crop
         self.segment_size:int=segment_size if segment_size%2!=0 else segment_size+1 # to make sure there is a center pixel
 
         self.carrier_image:cv.Mat=self._fetch_carrier_image()
@@ -16,7 +20,12 @@ class WatermarkEmbedder:
         self.carrier_image_keypoints:Tuple[cv.KeyPoint]=self.detect_key_points_stif()
         self.used_keypoints:List[cv.KeyPoint] = []
 
+
         self.modified_carrier_image:cv.Mat=self.embed_watermarks()
+
+        # Rotate the modified carrier image 
+        self.carrier_image_rotated_inc_watermark = self._rotate_carrier_image(self.carrier_rotate_angle)
+           
         
     def _fetch_carrier_image(self,) -> cv.Mat:
         """
@@ -166,11 +175,29 @@ class WatermarkEmbedder:
 
         return extracted_waterwork
 
+
+    def varify_watermark(self,)->bool:
+            extracted_watermark= self.extract_watermark()
+            reconstructed_watermark =self.reconstruct_full_watermark(extracted_watermark) 
+            
+
+            return np.array_equal(reconstructed_watermark, self.watermark_image) 
+    def _rotate_carrier_image(self, angle:int=90):
+
+        center_imng= (self.modified_carrier_image.shape[1]//2, self.modified_carrier_image.shape[0]// 2) 
+        rotation_matrix = cv.getRotationMatrix2D(center_imng, angle, 1.0) 
+        carrier_image_rotated =cv.warpAffine(self.modified_carrier_image, rotation_matrix, (self.modified_carrier_image.shape[1], self.modified_carrier_image.shape[0]))
+        return carrier_image_rotated 
     
+
+
+
     def show_image(self, image_type:int=0):
         """
         show the image using OpenCV.
-        :param image_type: 0 for carrier image, 1 for watermark image, 2 for modifed carrier image, 3 for carrier image with keypoints, 4 for extracted waterwork.
+        :param image_type: 0 for carrier image, 1 for watermark image, 2 for modifed carrier image, 3 for carrier image with keypoints, 4 for extracted waterwork, 
+        5, for rotated version of the carrier image, 
+        6 for extracted waterwork for rotated carrier image
         :param title: Title of the window.
         """
         if image_type == 0:
@@ -190,15 +217,14 @@ class WatermarkEmbedder:
             extracted_watermark = self.extract_watermark()
             full_watermark = self.reconstruct_full_watermark(extracted_watermark)
             show_image(full_watermark, title="Reconstructed Full Watermark")
+        elif image_type==5:
+            show_image(self.carrier_image_rotated_inc_watermark, title="Rotated Carrier Image")
+        elif image_type==6:
+            extracted_watermark = self.extract_watermark()
+            full_watermark = self.reconstruct_full_watermark(extracted_watermark)
+            show_image(full_watermark, title="Reconstructed Full Watermark from Rotated Carrier Image")
         else:
             raise ValueError("Invalid image type. Use 0 for carrier image or 1 for watermark image.")
         
         cv.waitKey(0)
         cv.destroyAllWindows()
-
-    def varify_watermark(self,)->bool:
-            extracted_watermark= self.extract_watermark()
-            reconstructed_watermark =self.reconstruct_full_watermark(extracted_watermark) 
-            
-            
-            return np.array_equal(reconstructed_watermark, self.watermark_image) 
