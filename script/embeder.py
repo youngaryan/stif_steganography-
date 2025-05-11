@@ -145,7 +145,7 @@ class WatermarkEmbedder:
 
         return frame
     
-    def extract_watermark(self,)->cv.Mat:
+    def extract_watermark(self, carrier_img:cv.Mat)->cv.Mat:
         if self.used_keypoints == []:
             raise RuntimeError("no keypoints has been used, there is nothing to extract")
         
@@ -161,7 +161,7 @@ class WatermarkEmbedder:
                     x = x_keypoint+dx
                     y= y_keypoint+dy
                     
-                    pixel = self.modified_carrier_image[y, x]
+                    pixel = carrier_img[y, x]
 
                     bit =pixel&1
                     segment[dy + half_segment, dx + half_segment] =0
@@ -176,7 +176,7 @@ class WatermarkEmbedder:
 
 
     def varify_watermark(self,)->bool:
-            extracted_watermark= self.extract_watermark()
+            extracted_watermark= self.extract_watermark(self.carrier_image)
             reconstructed_watermark =self.reconstruct_full_watermark(extracted_watermark) 
             
 
@@ -213,13 +213,13 @@ class WatermarkEmbedder:
 
             show_image(image_with_keypoints, title="Carrier image with keypoints")
         elif image_type==4:
-            extracted_watermark = self.extract_watermark()
+            extracted_watermark = self.extract_watermark(self.modified_carrier_image)
             full_watermark = self.reconstruct_full_watermark(extracted_watermark)
             show_image(full_watermark, title="Reconstructed Full Watermark")
         elif image_type==5:
             show_image(self.carrier_image_rotated_inc_watermark, title="Rotated Carrier Image")
         elif image_type==6:
-            extracted_watermark = self.extract_watermark()
+            extracted_watermark = self.extract_watermark(self.carrier_image_rotated_inc_watermark)
             full_watermark = self.reconstruct_full_watermark(extracted_watermark)
             show_image(full_watermark, title="Reconstructed Full Watermark from Rotated Carrier Image")
         else:
