@@ -17,7 +17,7 @@ class WatermarkEmbedder:
         self.carrier_image:cv.Mat=self._fetch_carrier_image()
         self.watermark_image, self.watermark_image_list=self._fetch_watermark_image()
         
-        self.carrier_image_keypoints:Tuple[cv.KeyPoint]=self.detect_key_points_stif()
+        self.carrier_image_keypoints:Tuple[cv.KeyPoint]=self.detect_key_points_stif(img=self.carrier_image)
         self.used_keypoints:List[cv.KeyPoint] = []
 
 
@@ -67,10 +67,9 @@ class WatermarkEmbedder:
 
         return watermark, segments
     
-
-    def detect_key_points_stif(self,)->Tuple[cv.KeyPoint]:
+    def detect_key_points_stif(self, img:np.ndarray)->Tuple[cv.KeyPoint]:
         stif= cv.SIFT_create()
-        key_points, _ = stif.detectAndCompute(self.carrier_image, None)
+        key_points, _ = stif.detectAndCompute(img, None)
 
         # need to fix the order of the jeypoint as they are being returned arbitrarily
         key_points = list(key_points) # so can be sort easier
