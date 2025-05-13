@@ -1,12 +1,14 @@
 import cv2 as cv
 import numpy as np
 from typing import List, Tuple
+import json
 
 from utilis import show_image
 
 class WatermarkEmbedder:
     def __init__(self, carrier_image_path:str="images/che.png", watermark_image_path:str="images/watermark.png", segment_size:int=5, 
-                 carrier_rotate_angle:int=1, carrier_scale_x:float= 1.5, carrier_scale_y:float= 1.5, carrier_crop: Tuple[int,int,int,int]=None,):
+                 carrier_rotate_angle:int=1, carrier_scale_x:float= 1.5, carrier_scale_y:float= 1.5, carrier_crop: Tuple[int,int,int,int]=None,
+                 keypoints_metadata=None):
         self.carrier_image_path:str=carrier_image_path
         self.watermark_image_path:str=watermark_image_path
         self.carrier_rotate_angle:int=carrier_rotate_angle
@@ -15,11 +17,21 @@ class WatermarkEmbedder:
         self.carrier_crop:Tuple[int,int,int,int]=carrier_crop 
         self.segment_size:int=segment_size if segment_size%2!=0 else segment_size+1 # to make sure there is a center pixel
         # self.error_tolerance = error_tolerance
+        
+       
 
         self.carrier_image:cv.Mat=self._fetch_carrier_image()
         self.watermark_image, self.watermark_image_list=self._fetch_watermark_image()
         
-        self.carrier_image_keypoints:Tuple[cv.KeyPoint]=self.detect_key_points_stif(img=self.carrier_image)
+
+        if keypoints_metadata :
+            with open(keypoints_metadata, 'r') as f:
+                meta =json.load(f)
+                self.kps = [cv.KeyPoint(kp[0], kp[1], kp[2]) for kp in meta['keypoints']]
+                self.order = meta['order']
+        else:
+            self.carrier_image_keypoints:Tuple[cv.KeyPoint]=self.detect_key_points_stif(img=self.carrier_image)
+        
         self.used_keypoints:List[cv.KeyPoint] = []
 
 
@@ -84,13 +96,21 @@ class WatermarkEmbedder:
 
         return key_points
     
-    def embed_watermarks(self,)->cv.Mat:
+    def embed_watermarks(self, out_path:str="res/embeded_watermatks.png", meta_path:str="res/meta_data.json")->cv.Mat:
         carrier_img_copy = self.carrier_image.copy()
 
         # for one keypint now
 
         half_sgement=self.segment_size//2 #to capture the square around the keypoints
         height,width = carrier_img_copy.shape[:2]
+
+
+        self.meta = {'keypoints': [(kp.pt[0], kp.pt[1], kp.size) for kp in self.carrier_image_keypoints],
+                     }
+        with open(meta_path, 'w') as f:
+            json.dump(self.meta, f)
+
+
 
         if len(self.watermark_image_list) > len(self.carrier_image_keypoints):
             print(f"Warn:watermark has {len(self.watermark_image_list)} segements, however the carrier image has only { len(self.carrier_image_keypoints)} keypoints, dome segments will not be embeded, this will cause to loose at least {len(self.watermark_image_list)-len(self.carrier_image_keypoints)} segments")
@@ -118,7 +138,7 @@ class WatermarkEmbedder:
                     original_pixel = carrier_img_copy[y, x]
                     carrier_img_copy[y,x]  = (original_pixel & ~1) | bit
             
-
+        cv.imwrite(out_path, carrier_img_copy)
         return carrier_img_copy
     
     def reconstruct_full_watermark(self, segments: List[np.ndarray]) -> np.ndarray:
@@ -150,15 +170,23 @@ class WatermarkEmbedder:
 
         return frame
     
-    def extract_watermark(self, carrier_img:cv.Mat)->cv.Mat:
-        if self.used_keypoints == []:
-            raise RuntimeError("no keypoints has been used, there is nothing to extract")
+    def extract_watermark(self, suspect_carrier_img:str="res/embeded_watermatks.png", meta_path:str = "res/meta_data.json")->cv.Mat:
+        # if self.used_keypoints == []:
+        #     raise RuntimeError("no keypoints has been used, there is nothing to extract")
+
+
+        with open(meta_path, 'r') as f:
+            meta = json.load(f)
+
+        suspect = cv.imread(suspect_carrier_img, cv.IMREAD_GRAYSCALE)
+        kps = [cv.KeyPoint(kp[0], kp[1], kp[2]) for kp in meta['keypoints']]
         
-        height, width = carrier_img.shape[:2]
+        
+        height, width = suspect.shape[:2]
         extracted_waterwork:List[np.ndarray] = []
         half_segment=self.segment_size//2
 
-        for keypoint in self.used_keypoints:
+        for keypoint in kps:
             x_keypoint, y_keypoint = int(round(keypoint.pt[0])), int(round(keypoint.pt[1]))
 
             segment = np.zeros((self.segment_size, self.segment_size), dtype=np.uint8)
@@ -169,7 +197,7 @@ class WatermarkEmbedder:
                     if not (0 <= x <width  and 0 <= y < height):
                         continue
 
-                    pixel = carrier_img[y, x]
+                    pixel = suspect[y, x]
 
                     bit =pixel&1
                     segment[dy + half_segment, dx + half_segment] =0
@@ -183,8 +211,8 @@ class WatermarkEmbedder:
         return extracted_waterwork
 
 
-    def varify_watermark(self,img:cv.Mat, error_tollernce = 0.1)->bool:
-            extracted_watermark= self.extract_watermark(img)
+    def varify_watermark(self,img_path:str= "res/embeded_watermatks.png", error_tollernce = 0.1)->bool:
+            extracted_watermark= self.extract_watermark(img_path)
             reconstructed_watermark =self.reconstruct_full_watermark(extracted_watermark) 
             
             if reconstructed_watermark.shape != self.watermark_image.shape: ##avoid shpe error
@@ -250,27 +278,27 @@ class WatermarkEmbedder:
 
             show_image(image_with_keypoints, title="Carrier image with keypoints")
         elif image_type==4:
-            extracted_watermark = self.extract_watermark(self.modified_carrier_image)
+            extracted_watermark = self.extract_watermark("res/embeded_watermatks.png")
             full_watermark = self.reconstruct_full_watermark(extracted_watermark)
             show_image(full_watermark, title="Reconstructed Full Watermark")
         elif image_type==5:
             show_image(self.modified_carrier_image_rotated, title="Rotated Carrier Image")
-        elif image_type==6:
-            extracted_watermark = self.extract_watermark(self.modified_carrier_image_rotated)
-            full_watermark = self.reconstruct_full_watermark(extracted_watermark)
-            show_image(full_watermark, title="Reconstructed Full Watermark from Rotated Carrier Image")
+        # elif image_type==6:
+        #     extracted_watermark = self.extract_watermark("res/embeded_watermatks.png")
+        #     full_watermark = self.reconstruct_full_watermark(extracted_watermark)
+        #     show_image(full_watermark, title="Reconstructed Full Watermark from Rotated Carrier Image")
         elif image_type==7:
             show_image(self.modified_carrier_image_scaled, "scaled carrier img")
-        elif image_type==8:
-            extracted_watermark = self.extract_watermark(self.modified_carrier_image_scaled)
-            full_watermark = self.reconstruct_full_watermark(extracted_watermark)
-            show_image(full_watermark, title="Reconstructed Full Watermark from scaled Carrier Image")
+        # elif image_type==8:
+        #     extracted_watermark = self.extract_watermark(self.modified_carrier_image_scaled)
+        #     full_watermark = self.reconstruct_full_watermark(extracted_watermark)
+        #     show_image(full_watermark, title="Reconstructed Full Watermark from scaled Carrier Image")
         elif image_type==9:
             show_image(self.modified_carrier_image_cropped, "scaled carrier img")
-        elif image_type==10:
-            extracted_watermark = self.extract_watermark(self.modified_carrier_image_cropped)
-            full_watermark = self.reconstruct_full_watermark(extracted_watermark)
-            show_image(full_watermark, title="Reconstructed Full Watermark from scaled Carrier Image")
+        # elif image_type==10:
+        #     extracted_watermark = self.extract_watermark(self.modified_carrier_image_cropped)
+        #     full_watermark = self.reconstruct_full_watermark(extracted_watermark)
+        #     show_image(full_watermark, title="Reconstructed Full Watermark from scaled Carrier Image")
         else:
             raise ValueError("Invalid image type. Use 0 for carrier image or 1 for watermark image.")
         
