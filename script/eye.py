@@ -20,9 +20,9 @@ if __name__ =="__main__":
     embedder.show_image(9) #cropped imge
     embedder.show_image(10)
 
-    print(embedder.varify_watermark(img=embedder.modified_carrier_image_rotated))
-    print(embedder.varify_watermark(img=embedder.modified_carrier_image_scaled))
-    print(embedder.varify_watermark(img=embedder.modified_carrier_image_cropped))
+    print("varyfy rotation ",embedder.varify_watermark(img=embedder.modified_carrier_image_rotated))
+    print("varyfy scaled ",embedder.varify_watermark(img=embedder.modified_carrier_image_scaled))
+    print("varyfy cropped ",embedder.varify_watermark(img=embedder.modified_carrier_image_cropped))
     
     
-    print(embedder.varify_watermark(img=embedder.modified_carrier_image))
+    print("varyfy actual embded ",embedder.varify_watermark(img=embedder.modified_carrier_image))

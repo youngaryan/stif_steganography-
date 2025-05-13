@@ -6,14 +6,15 @@ from utilis import show_image
 
 class WatermarkEmbedder:
     def __init__(self, carrier_image_path:str="images/che.png", watermark_image_path:str="images/watermark.png", segment_size:int=5, 
-                 carrier_rotate_angle:int=1, carrier_scale_x:float= 1.5, carrier_scale_y:float= 1.5, carrier_crop: Tuple[int,int,int,int]=None):
+                 carrier_rotate_angle:int=1, carrier_scale_x:float= 1.5, carrier_scale_y:float= 1.5, carrier_crop: Tuple[int,int,int,int]=None,):
         self.carrier_image_path:str=carrier_image_path
         self.watermark_image_path:str=watermark_image_path
         self.carrier_rotate_angle:int=carrier_rotate_angle
         self.carrier_scale_x:float=carrier_scale_x
         self.carrier_scale_y:float=carrier_scale_y
-        self.carrier_crop:Tuple[int,int,int,int]=carrier_crop
+        self.carrier_crop:Tuple[int,int,int,int]=carrier_crop 
         self.segment_size:int=segment_size if segment_size%2!=0 else segment_size+1 # to make sure there is a center pixel
+        # self.error_tolerance = error_tolerance
 
         self.carrier_image:cv.Mat=self._fetch_carrier_image()
         self.watermark_image, self.watermark_image_list=self._fetch_watermark_image()
@@ -153,6 +154,7 @@ class WatermarkEmbedder:
         if self.used_keypoints == []:
             raise RuntimeError("no keypoints has been used, there is nothing to extract")
         
+        height, width = carrier_img.shape[:2]
         extracted_waterwork:List[np.ndarray] = []
         half_segment=self.segment_size//2
 
@@ -164,7 +166,9 @@ class WatermarkEmbedder:
                 for dx in range(-half_segment, half_segment+1):
                     x = x_keypoint+dx
                     y= y_keypoint+dy
-                    
+                    if not (0 <= x <width  and 0 <= y < height):
+                        continue
+
                     pixel = carrier_img[y, x]
 
                     bit =pixel&1
@@ -179,12 +183,18 @@ class WatermarkEmbedder:
         return extracted_waterwork
 
 
-    def varify_watermark(self,img:cv.Mat)->bool:
+    def varify_watermark(self,img:cv.Mat, error_tollernce = 0.1)->bool:
             extracted_watermark= self.extract_watermark(img)
             reconstructed_watermark =self.reconstruct_full_watermark(extracted_watermark) 
             
+            if reconstructed_watermark.shape != self.watermark_image.shape: ##avoid shpe error
+                return False
+            
+            diff = np.abs(reconstructed_watermark.astype(np.float32) -self.watermark_image.astype(np.float32))
+            max_diff = 255.0  # assuming 8-bit grayscale
+            mismatch_fraction = np.sum(diff >(error_tollernce * max_diff))/diff.size
 
-            return np.array_equal(reconstructed_watermark, self.watermark_image) 
+            return mismatch_fraction <=error_tollernce
     def _rotate_carrier_image(self, angle:int=90)->cv.Mat:
 
         center_imng= (self.modified_carrier_image.shape[1]//2, self.modified_carrier_image.shape[0]// 2) 
@@ -207,8 +217,12 @@ class WatermarkEmbedder:
             y1 = (hieght -crop_h)//2 
             x2 = x1+crop_w
             y2 = y1 +crop_h
+            self.carrier_crop = (x1,x2,y1,y2)
+
         x1, y1 = max(0, x1), max(0, y1)
         x2, y2 = min(width, x2), min(hieght, y2)
+
+        
         return self.modified_carrier_image[y1:y2, x1:x2]
     def show_image(self, image_type:int=0):
         """
