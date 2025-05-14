@@ -1,15 +1,16 @@
 from embeder import WatermarkEmbedder
-
+from temper_detector import TemperDetector
 
 
 if __name__ =="__main__":
+
     embedder = WatermarkEmbedder(watermark_image_path="images/watermark_A_5x5.png", segment_size=5, carrier_image_path="images/che.png")
     
     # embedder.show_image(0) #Carrier image
     # embedder.show_image(1) #Watermark image
     # embedder.show_image(2) #watermarked image(modified carrier image)
     # embedder.show_image(3) # Carrier image with keypoints
-    embedder.show_image(4)
+    # embedder.show_image(4)
     # embedder.show_image(5) #Rotated Carrier Image
     # embedder.show_image(6) #watermarked image(modified rotated carrier image)
 
@@ -25,4 +26,13 @@ if __name__ =="__main__":
     # print("varyfy cropped ",embedder.varify_watermark(img=embedder.modified_carrier_image_cropped))
     
     
-    print("varyfy actual embded ",embedder.varify_watermark(img_path=embedder.modified_carrier_image_path))
+    # print("varyfy actual embded ",embedder.varify_watermark(img_path=embedder.modified_carrier_image_path))
+
+    detector =TemperDetector(embedder,threshold=0.05)
+
+    #false return
+    print(detector.detect_temper(modified_img_path="images/che.png"))
+
+
+    #True return
+    print(detector.detect_temper(modified_img_path="res/embeded_watermatks.png"))
