@@ -8,8 +8,14 @@ class TemperDetector:
         self.threshold=threshold
     
 
-    def detect_temper(self, modified_img_path:str = "res/embeded_watermatks.png", meta_data:str="res/meta_data.json"):
-        '''return true if the img has been temperred with otherwisue false'''
+    def detect_temper(self, modified_img_path:str = "res/embeded_watermatks.png", meta_data:str="res/meta_data.json") ->dict:
+        '''return a dict inclduing
+            "tampered":tampered,
+            "mismatches":int(mismatches),
+            "total_pixels":int(total),
+            "mismatch_fraction":float(frac),
+            "threshold":self.threshold
+        '''
 
 
         extracted_watermark = self.embeder.extract_watermark(
@@ -30,4 +36,10 @@ class TemperDetector:
         frac = mismatches / total
 
         tampered = frac > self.threshold
-        return tampered
+        return {
+            "tampered": tampered,
+            "mismatches": int(mismatches),
+            "total_pixels": int(total),
+            "mismatch_fraction": float(frac),
+            "threshold": self.threshold
+        }

@@ -2,6 +2,7 @@ import cv2 as cv
 import numpy as np
 from typing import List, Tuple
 import json
+import os
 
 from utilis import show_image
 
@@ -176,7 +177,11 @@ class WatermarkEmbedder:
         # if self.used_keypoints == []:
         #     raise RuntimeError("no keypoints has been used, there is nothing to extract")
 
-
+        if not os.path.exists(suspect_carrier_img):
+            raise FileNotFoundError(f"couldn't find {suspect_carrier_img}")
+        if not os.path.exists(meta_path):
+            raise FileNotFoundError(f"couldn't find {meta_path}")
+        
         with open(meta_path, 'r') as f:
             meta = json.load(f)
 

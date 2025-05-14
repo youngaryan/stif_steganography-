@@ -30,9 +30,9 @@ if __name__ =="__main__":
 
     detector =TemperDetector(embedder,threshold=0.05)
 
+    #true return
+    print(detector.detect_temper(modified_img_path="images/che.png")['tampered'])
+
+
     #false return
-    print(detector.detect_temper(modified_img_path="images/che.png"))
-
-
-    #True return
-    print(detector.detect_temper(modified_img_path="res/embeded_watermatks.png"))
+    print(detector.detect_temper(modified_img_path="res/embeded_watermatks.png")['tampered'])
