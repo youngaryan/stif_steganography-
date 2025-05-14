@@ -25,4 +25,4 @@ if __name__ =="__main__":
     # print("varyfy cropped ",embedder.varify_watermark(img=embedder.modified_carrier_image_cropped))
     
     
-    print("varyfy actual embded ",embedder.varify_watermark(img_path=embedder.modified_carrier_image))
+    print("varyfy actual embded ",embedder.varify_watermark(img_path=embedder.modified_carrier_image_path))

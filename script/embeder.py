@@ -18,6 +18,7 @@ class WatermarkEmbedder:
         self.segment_size:int=segment_size if segment_size%2!=0 else segment_size+1 # to make sure there is a center pixel
         # self.error_tolerance = error_tolerance
         
+        self.modified_carrier_image_path = None
        
 
         self.carrier_image:cv.Mat=self._fetch_carrier_image()
@@ -137,7 +138,8 @@ class WatermarkEmbedder:
                         bit = 1
                     original_pixel = carrier_img_copy[y, x]
                     carrier_img_copy[y,x]  = (original_pixel & ~1) | bit
-            
+        
+        self.modified_carrier_image_path = out_path
         cv.imwrite(out_path, carrier_img_copy)
         return carrier_img_copy
     
