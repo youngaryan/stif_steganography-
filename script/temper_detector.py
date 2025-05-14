@@ -15,6 +15,8 @@ class TemperDetector:
             "total_pixels":int(total),
             "mismatch_fraction":float(frac),
             "threshold":self.threshold
+
+            and -1 for all values exrpt tampered of shape mismatch
         '''
 
 
@@ -28,7 +30,13 @@ class TemperDetector:
         original_watermark, _= self.embeder._fetch_watermark_image()
 
         if full_extracted_watermark.shape != original_watermark.shape: ##avoid shpe error
-            return True #temperd
+            return {
+            "tampered": tampered,
+            "mismatches": -1,
+            "total_pixels": -1,
+            "mismatch_fraction": -1,
+            "threshold": self.max_mismatch_fraction
+        }
         
         diff = np.abs(full_extracted_watermark.astype(np.float32) -original_watermark.astype(np.float32))
         mismatches = np.sum(diff > 0)
