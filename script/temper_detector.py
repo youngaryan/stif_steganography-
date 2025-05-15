@@ -31,7 +31,7 @@ class TemperDetector:
 
         if full_extracted_watermark.shape != original_watermark.shape: ##avoid shpe error
             return {
-            "tampered": tampered,
+            "tampered": True,
             "mismatches": -1,
             "total_pixels": -1,
             "mismatch_fraction": -1,

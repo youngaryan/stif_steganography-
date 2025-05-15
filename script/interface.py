@@ -23,6 +23,7 @@ class InterFace(tk.Tk):
         carrier, wm = self._load_paths()
         #TODO need to change embeder class maybe to only apply the watermark when the function is called
         self.embeder = WatermarkEmbedder(carrier_image_path=carrier, watermark_image_path=wm, segment_size=5)
+        self.embeder.embed()
         tk.messagebox.showinfo("Done", f"Saved at {self.embeder.modified_carrier_image_path}")
 
     def verify(self):

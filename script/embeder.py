@@ -10,8 +10,19 @@ class WatermarkEmbedder:
     def __init__(self, carrier_image_path:str="images/che.png", watermark_image_path:str="images/watermark.png", segment_size:int=5, 
                  carrier_rotate_angle:int=1, carrier_scale_x:float= 1.5, carrier_scale_y:float= 1.5, carrier_crop: Tuple[int,int,int,int]=None,
                  keypoints_metadata=None):
+        
+
         self.carrier_image_path:str=carrier_image_path
         self.watermark_image_path:str=watermark_image_path
+
+        if not self.carrier_image_path.lower().endswith('.png') and  not self.carrier_image_path.lower().endswith('.tif'):
+            raise ValueError(f"carrier image must be in .png or .tif format Got: {self.carrier_image_path}")
+
+        if not self.watermark_image_path.lower().endswith('.png') and  not self.watermark_image_path.lower().endswith('.tif'):
+            raise ValueError(f"watermark image must be in .png or .tif format Got: {self.watermark_image_path}")
+
+
+
         self.carrier_rotate_angle:int=carrier_rotate_angle
         self.carrier_scale_x:float=carrier_scale_x
         self.carrier_scale_y:float=carrier_scale_y
@@ -37,15 +48,28 @@ class WatermarkEmbedder:
         self.used_keypoints:List[cv.KeyPoint] = []
 
 
-        self.modified_carrier_image:cv.Mat=self.embed_watermarks()
+        # self.modified_carrier_image:cv.Mat=self.embed_watermarks()
 
         # Rotate the modified carrier image 
-        self.modified_carrier_image_rotated = self._rotate_carrier_image(self.carrier_rotate_angle)
+        # self.modified_carrier_image_rotated = self._rotate_carrier_image(self.carrier_rotate_angle)
         # scale the modified carrier image
-        self.modified_carrier_image_scaled:cv.Mat = self._scale_img(self.modified_carrier_image, self.carrier_scale_x, self.carrier_scale_y)
+        # self.modified_carrier_image_scaled:cv.Mat = self._scale_img(self.modified_carrier_image, self.carrier_scale_x, self.carrier_scale_y)
         # crop the modified image
-        self.modified_carrier_image_cropped:cv.Mat =self._crop_img(self.modified_carrier_image, carrier_crop)
+        # self.modified_carrier_image_cropped:cv.Mat =self._crop_img(self.modified_carrier_image, carrier_crop)
         
+
+    def embed(self, out_path:str="res/embeded_watermatks.png", meta_path:str = "res/meta_data.json"):
+        self.modified_carrier_image = self.embed_watermarks(out_path, meta_path)
+        self.modified_carrier_image_rotated = self._rotate_carrier_image(self.carrier_rotate_angle)
+        self.modified_carrier_image_scaled = self._scale_img(self.modified_carrier_image, self.carrier_scale_x, self.carrier_scale_y)
+        self.modified_carrier_image_cropped = self._crop_img(self.modified_carrier_image, self.carrier_crop)
+
+        cv.imwrite(filename=f"{out_path[:-4]}_roated.png", img=self.modified_carrier_image_rotated)
+        cv.imwrite(filename=f"{out_path[:-4]}_scaled.png", img=self.modified_carrier_image_scaled)
+        cv.imwrite(filename=f"{out_path[:-4]}_cropped.png", img=self.modified_carrier_image_cropped)
+        return self.modified_carrier_image
+    
+
     def _fetch_carrier_image(self,) -> cv.Mat:
         """
         Fetch the carrier image from the given path.
