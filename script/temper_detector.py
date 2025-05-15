@@ -35,7 +35,7 @@ class TemperDetector:
             "mismatches": -1,
             "total_pixels": -1,
             "mismatch_fraction": -1,
-            "threshold": self.max_mismatch_fraction
+            "threshold": self.threshold
         }
         
         diff = np.abs(full_extracted_watermark.astype(np.float32) -original_watermark.astype(np.float32))
