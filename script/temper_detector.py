@@ -3,7 +3,7 @@ from embeder import WatermarkEmbedder
 
 
 class TemperDetector:
-    def __init__(self, embeder:WatermarkEmbedder, threshold:float= 0.1 ):
+    def __init__(self, embeder:WatermarkEmbedder, threshold:float= 0.05 ):
         self.embeder=embeder
         self.threshold=threshold
     

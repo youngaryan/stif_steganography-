@@ -218,7 +218,7 @@ class WatermarkEmbedder:
         return extracted_waterwork
 
 
-    def varify_watermark(self,img_path:str= "res/embeded_watermatks.png", error_tollernce = 0.1)->bool:
+    def varify_watermark(self,img_path:str= "res/embeded_watermatks.png", error_tollernce = 0.05)->bool:
             extracted_watermark= self.extract_watermark(img_path)
             reconstructed_watermark =self.reconstruct_full_watermark(extracted_watermark) 
             

@@ -26,13 +26,20 @@ class InterFace(tk.Tk):
         tk.messagebox.showinfo("Done", f"Saved at {self.embeder.modified_carrier_image_path}")
 
     def verify(self):
+        if not self.embeder:
+            tk.messagebox.showinfo("Error", "you haven't embeded any image yet, use the embed button")
+            return
         path_to_var = filedialog.askopenfilename()
-        
+
         check = self.embeder.varify_watermark(img_path=path_to_var)
         print("varifed" if check else "not varifed!")
 
 
     def temper_detect(self):
+        if not self.embeder:
+            tk.messagebox.showinfo("Error","you haven't embeded any image yet, use the embed button")
+            return
+        
         path_to_var = filedialog.askopenfilename()
 
         td = TemperDetector(embeder=self.embeder)
