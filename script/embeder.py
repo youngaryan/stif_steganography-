@@ -119,7 +119,8 @@ class WatermarkEmbedder:
 
 
         self.meta = {'keypoints': [(kp.pt[0], kp.pt[1], kp.size) for kp in self.carrier_image_keypoints],
-                     }
+                    'segment_size':self.segment_size ,
+                    'channel':channel}
         with open(meta_path, 'w') as f:
             json.dump(self.meta, f)
 
@@ -196,19 +197,26 @@ class WatermarkEmbedder:
         with open(meta_path, 'r') as f:
             meta = json.load(f)
 
-        suspect_colour = cv.imread(suspect_carrier_img, cv.IMREAD_COLOR)
-        suspect = suspect_colour[:,:,0]
+
+
+
         kps = [cv.KeyPoint(kp[0], kp[1], kp[2]) for kp in meta['keypoints']]
+        segment_size = meta['segment_size']
+        channel = meta['channel']
+
+
+        suspect_colour = cv.imread(suspect_carrier_img, cv.IMREAD_COLOR)
+        suspect = suspect_colour[:,:,channel]
         
         
         height, width = suspect.shape[:2]
         extracted_waterwork:List[np.ndarray] = []
-        half_segment=self.segment_size//2
+        half_segment=segment_size//2
 
         for keypoint in kps:
             x_keypoint, y_keypoint = int(round(keypoint.pt[0])), int(round(keypoint.pt[1]))
 
-            segment = np.zeros((self.segment_size, self.segment_size), dtype=np.uint8)
+            segment = np.zeros((segment_size, segment_size), dtype=np.uint8)
             for dy in range(-half_segment,half_segment+1):
                 for dx in range(-half_segment, half_segment+1):
                     x = x_keypoint+dx
