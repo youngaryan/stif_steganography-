@@ -8,9 +8,9 @@ class InterFace(tk.Tk):
     def __init__(self, screenName = None, baseName = None, className = "Tk", useTk = True, sync = False, use = None):
         super().__init__(screenName, baseName, className, useTk, sync, use)
         self.title("watermark embeder (COM3001)")
-        tk.Button(self,text="Embed", command=self.embed).grid(row=0,column=0)
-        tk.Button(self,text="verify", command=self.verify).grid(row=0,column=1)
-        tk.Button(self,text="detect temper", command=self.temper_detect).grid(row=0,column=2)
+        tk.Button(self,text="Embed", command=self.embed).grid(row=0,column=0, pady=10,padx=10)
+        tk.Button(self,text="verify", command=self.verify).grid(row=0,column=1, pady=10,padx=10)
+        tk.Button(self,text="detect temper", command=self.temper_detect).grid(row=0,column=2, pady=10,padx=10)
         self.embeder:WatermarkEmbedder=None
 
     

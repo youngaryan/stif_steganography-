@@ -33,7 +33,9 @@ class WatermarkEmbedder:
         self.modified_carrier_image_path = None
        
 
-        self.carrier_image:cv.Mat=self._fetch_carrier_image()
+        self.carrier_image_colour:cv.Mat=cv.imread(self.carrier_image_path, cv.IMREAD_COLOR)
+        self.carrier_image_grey:cv.Mat=cv.imread(self.carrier_image_path, cv.IMREAD_GRAYSCALE)
+
         self.watermark_image, self.watermark_image_list=self._fetch_watermark_image()
         
 
@@ -43,7 +45,7 @@ class WatermarkEmbedder:
                 self.kps = [cv.KeyPoint(kp[0], kp[1], kp[2]) for kp in meta['keypoints']]
                 self.order = meta['order']
         else:
-            self.carrier_image_keypoints:Tuple[cv.KeyPoint]=self.detect_key_points_stif(img=self.carrier_image)
+            self.carrier_image_keypoints:Tuple[cv.KeyPoint]=self.detect_key_points_stif(img=self.carrier_image_grey)
         
         self.used_keypoints:List[cv.KeyPoint] = []
 
@@ -69,21 +71,6 @@ class WatermarkEmbedder:
         cv.imwrite(filename=f"{out_path[:-4]}_cropped.png", img=self.modified_carrier_image_cropped)
         return self.modified_carrier_image
     
-
-    def _fetch_carrier_image(self,) -> cv.Mat:
-        """
-        Fetch the carrier image from the given path.
-        :param image_path: Path to the carrier image.
-        :return: Carrier image as a cv.Mat object.
-        """
-        # Read the image using OpenCV
-        carrier_image = cv.imread(self.carrier_image_path, cv.IMREAD_GRAYSCALE)
-        
-        # Check if the image was loaded successfully
-        if carrier_image is None:
-            raise FileNotFoundError(f"Carrier image not found at ~/{self.carrier_image_path}.")
-        
-        return carrier_image
         
     #TODO : add return type for this function
     def _fetch_watermark_image(self,):
@@ -123,8 +110,8 @@ class WatermarkEmbedder:
         return key_points
     
     def embed_watermarks(self, out_path:str="res/embeded_watermatks.png", meta_path:str="res/meta_data.json")->cv.Mat:
-        carrier_img_copy = self.carrier_image.copy()
-
+        carrier_img_copy = self.carrier_image_colour.copy()
+        channel:int=0 #blue?
         # for one keypint now
 
         half_sgement=self.segment_size//2 #to capture the square around the keypoints
@@ -161,8 +148,8 @@ class WatermarkEmbedder:
 
                     if waterwork_segment[dy+half_sgement,dx+half_sgement]>0:
                         bit = 1
-                    original_pixel = carrier_img_copy[y, x]
-                    carrier_img_copy[y,x]  = (original_pixel & ~1) | bit
+                    original_pixel = carrier_img_copy[y, x,channel]
+                    carrier_img_copy[y,x,channel]  = (original_pixel & ~1) | bit
         
         self.modified_carrier_image_path = out_path
         cv.imwrite(out_path, carrier_img_copy)
@@ -209,7 +196,8 @@ class WatermarkEmbedder:
         with open(meta_path, 'r') as f:
             meta = json.load(f)
 
-        suspect = cv.imread(suspect_carrier_img, cv.IMREAD_GRAYSCALE)
+        suspect_colour = cv.imread(suspect_carrier_img, cv.IMREAD_COLOR)
+        suspect = suspect_colour[:,:,0]
         kps = [cv.KeyPoint(kp[0], kp[1], kp[2]) for kp in meta['keypoints']]
         
         
