@@ -201,7 +201,7 @@ class WatermarkEmbedder:
 
 
         kps = [cv.KeyPoint(kp[0], kp[1], kp[2]) for kp in meta['keypoints']]
-        segment_size = meta['segment_size']
+        self.segment_size = meta['segment_size']
         channel = meta['channel']
 
 
@@ -211,12 +211,12 @@ class WatermarkEmbedder:
         
         height, width = suspect.shape[:2]
         extracted_waterwork:List[np.ndarray] = []
-        half_segment=segment_size//2
+        half_segment=self.segment_size//2
 
         for keypoint in kps:
             x_keypoint, y_keypoint = int(round(keypoint.pt[0])), int(round(keypoint.pt[1]))
 
-            segment = np.zeros((segment_size, segment_size), dtype=np.uint8)
+            segment = np.zeros((self.segment_size, self.segment_size), dtype=np.uint8)
             for dy in range(-half_segment,half_segment+1):
                 for dx in range(-half_segment, half_segment+1):
                     x = x_keypoint+dx
@@ -238,8 +238,8 @@ class WatermarkEmbedder:
         return extracted_waterwork
 
 
-    def varify_watermark(self,img_path:str= "res/embeded_watermatks.png", error_tollernce = 0.05)->bool:
-            extracted_watermark= self.extract_watermark(img_path)
+    def varify_watermark(self,img_path:str= "res/embeded_watermatks.png", meta_path: str = "res/meta_data.json", error_tollernce = 0.05)->bool:
+            extracted_watermark= self.extract_watermark(img_path, meta_path=meta_path)
             reconstructed_watermark =self.reconstruct_full_watermark(extracted_watermark) 
             
             if reconstructed_watermark.shape != self.watermark_image.shape: ##avoid shpe error

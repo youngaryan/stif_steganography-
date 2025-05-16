@@ -3,7 +3,7 @@ from embeder import WatermarkEmbedder
 
 
 class TemperDetector:
-    def __init__(self, embeder:WatermarkEmbedder, threshold:float= 0.05 ):
+    def __init__(self, embeder:WatermarkEmbedder, threshold:float= 0.1 ):
         self.embeder=embeder
         self.threshold=threshold
     
@@ -35,7 +35,8 @@ class TemperDetector:
             "mismatches": -1,
             "total_pixels": -1,
             "mismatch_fraction": -1,
-            "threshold": self.threshold
+            "threshold": self.threshold,
+            "reason":"shape mismatch error"
         }
         
         diff = np.abs(full_extracted_watermark.astype(np.float32) -original_watermark.astype(np.float32))
@@ -43,11 +44,13 @@ class TemperDetector:
         total = diff.size
         frac = mismatches / total
 
+
         tampered = frac > self.threshold
         return {
             "tampered": tampered,
             "mismatches": int(mismatches),
             "total_pixels": int(total),
             "mismatch_fraction": float(frac),
-            "threshold": self.threshold
+            "threshold": self.threshold,
+            "reason":"shape mismatch error"
         }
