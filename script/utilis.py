@@ -1,6 +1,9 @@
 from matplotlib import pyplot as plt
 import numpy as np
+from pathlib import Path
 from typing import Tuple,List
+import logging
+logging.basicConfig(level=logging.INFO,format='[%(levelname)s] %(asctime)s - %(message)s',datefmt='%Y-%m-%d %H:%M:%S')
 
 def show_image(image, title="image"):
     plt.imshow(image, cmap='gray')
@@ -21,3 +24,11 @@ def watermark_to_segements(water_mark:np.ndarray=None, segment_szie:int=5) -> Tu
 
 def ensure_odd(n: int) -> int:
     return n if n % 2 == 1 else n + 1
+
+def make_dir( path="res")-> None:
+    path_obj = Path(path)
+    if path_obj.exists():
+        logging.info(f"directory {path} exist.")
+    else:
+        path_obj.mkdir(parents=True,exist_ok=True)
+        logging.info(f"created a directory at {path}.")

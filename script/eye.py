@@ -1,6 +1,5 @@
-from embeder import WatermarkEmbedder
-from temper_detector import TemperDetector
-from interface import InterFace
+
+from interface import Interface
 
 
 if __name__ =="__main__":
@@ -38,5 +37,5 @@ if __name__ =="__main__":
     # #false return
     # print(detector.detect_temper(modified_img_path="res/embeded_watermatks.png")['tampered'])
 
-    ic = InterFace()
+    ic = Interface()
     ic.mainloop()

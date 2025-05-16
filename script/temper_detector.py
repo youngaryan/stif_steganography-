@@ -1,56 +1,40 @@
+
+import cv2 as cv
 import numpy as np
-from embeder import WatermarkEmbedder
+from typing import List, Tuple
+import json
+import os
+import logging
+from pathlib import Path
+from utilis import ensure_odd, watermark_to_segements, make_dir
 
-
-class TemperDetector:
-    def __init__(self, embeder:WatermarkEmbedder, threshold:float= 0.1 ):
-        self.embeder=embeder
-        self.threshold=threshold
+from watermark_verifer import WatermarkVeryfier
+class TamperDetector:
+    def __init__(self, img_path:str, meta_oath:str,watermark_path:str,out_dir:str="res" )->None:
+        self.img_path=(img_path)
+        self.meta_oath=(meta_oath)
+        self.watermark_path=(watermark_path)
+        self.output_path=Path(out_dir)
+        make_dir(path=out_dir,)
     
-
-    def detect_temper(self, modified_img_path:str = "res/embeded_watermatks.png", meta_data:str="res/meta_data.json") ->dict:
-        '''return a dict inclduing
-            "tampered":tampered,
-            "mismatches":int(mismatches),
-            "total_pixels":int(total),
-            "mismatch_fraction":float(frac),
-            "threshold":self.threshold
-
-            and -1 for all values exrpt tampered of shape mismatch
-        '''
-
-
-        extracted_watermark = self.embeder.extract_watermark(
-            suspect_carrier_img=modified_img_path,
-            meta_path=meta_data
+    def detect(self)->dict:
+        verifer = WatermarkVeryfier(
+            img_path=self.img_path, meta_oath=self.meta_oath, watermark_path=self.watermark_path
         )
 
-        full_extracted_watermark = self.embeder.reconstruct_full_watermark(extracted_watermark)
+        auth,_,mismatches = verifer.verify()
 
-        original_watermark, _= self.embeder._fetch_watermark_image()
+        tempered_path=None
+        if mismatches:
+            img = cv.imread(self.img_path)
+            for(x,y)in mismatches:
+                cv.circle(img, (x,y), 8, (0,0,255), 2)
+                tempered_path = f"{Path(self.img_path)}_tempered.png"
+                cv.imwrite(tempered_path,img)
 
-        if full_extracted_watermark.shape != original_watermark.shape: ##avoid shpe error
-            return {
-            "tampered": True,
-            "mismatches": -1,
-            "total_pixels": -1,
-            "mismatch_fraction": -1,
-            "threshold": self.threshold,
-            "reason":"shape mismatch error"
+        return {
+            "tampered":not auth,
+            "mismatching_points":(mismatches),
+            "overley_tempred_path":tempered_path
         }
         
-        diff = np.abs(full_extracted_watermark.astype(np.float32) -original_watermark.astype(np.float32))
-        mismatches = np.sum(diff > 0)
-        total = diff.size
-        frac = mismatches / total
-
-
-        tampered = frac > self.threshold
-        return {
-            "tampered": tampered,
-            "mismatches": int(mismatches),
-            "total_pixels": int(total),
-            "mismatch_fraction": float(frac),
-            "threshold": self.threshold,
-            "reason":"shape mismatch error"
-        }
