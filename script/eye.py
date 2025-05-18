@@ -17,15 +17,21 @@ import os, sys
 import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
-
-
+###Golbal VArables###
 SEG_SIZE=9
 CHANNEL=0 # blue
 META_DATA=None #to store metadata if none will load json
+#### HELPER FUNCTIONS####
+def make_dir(path_n_fldr:str="res",base:str="che",typ="modifed",ext:str=".png")->str:
+    ndir=Path(path_n_fldr)
+    ndir.mkdir(exist_ok=True)
+    file_name=f"{base}_{typ}{ext}"
+    return str(ndir/file_name)
 
-def binarise(img: np.ndarray) -> np.ndarray:
+def binarise(img: np.ndarray)->np.ndarray:
     '''convert a grayscale image to black and white'''
     return (img>127).astype(np.uint8)
+###Embeder class####
 class Embedder:
     '''embeds a watermark into a carrier image.'''
     def __init__(self,carrier:str,watermark:str,max_pts:int=400):
@@ -67,17 +73,18 @@ class Embedder:
                     px=out[y+dy,x+dx,CHANNEL]
                     out[y+dy,x+dx,CHANNEL]=(px&~1)|bit
             meta["keypoints"].append({"pt":[float(kp.pt[0]),float(kp.pt[1])],"size":kp.size,"angle":kp.angle})
-        base=Path(self.carrier).with_suffix("")
-        img=f"{base}_wm.png"
-        m=f"{base}_meta.json"
+        base=Path(self.carrier).stem
+        img=make_dir(base=base,typ="modified",ext=".png")
+        m=make_dir(base=base,typ="meta",ext=".json")
         cv.imwrite(img,out)
         json.dump(meta,open(m,'w'),indent=2)
         global META_DATA
         META_DATA=meta
         return {"img":img,"meta":m}
+###Verifier class####
 class Verifier:
     '''verify suspected carrier image of carrying a watermark '''
-    def __init__(self,suspect:str,meta:str,error_tolerance :float=0.2):
+    def __init__(self,suspect:str,meta:str,error_tolerance :float=0.1):
         self.suspect=suspect
         self.meta=json.load(open(meta)) if META_DATA is None else META_DATA;
         self.error_tolerance =error_tolerance 
@@ -142,6 +149,7 @@ class Verifier:
         if upscale:
             recovered=cv.resize(recovered,(SEG_SIZE*3,SEG_SIZE*3))
         return recovered
+###Detector class####
 class Detector:
     '''
     detects mismatches on suspected carrier, if mismatches exist it draws a red circle around them. 
@@ -162,10 +170,11 @@ class Detector:
         if mism:
             img=cv.imread(self.suspect)
             [cv.circle(img,(x,y),8,(0,0,255),2) for x,y in mism]
-            overlay_path = Path(self.suspect).with_name(f"{Path(self.suspect).stem}_overlay{Path(self.suspect).suffix}")
+            base=Path(self.suspect).stem
+            overlay_path=make_dir(base=base,typ="overlay",ext=".png")
             cv.imwrite(str(overlay_path),img)
         return {"tampered":not auth,"mismatches":len(mism),"inlier":round(inl,3),"overlay":str(overlay_path)}
-
+###GUI class####
 class InterFace:
     '''simple GUI for with three buttons'''
     def __init__(self,root:tk.Tk):
@@ -230,7 +239,8 @@ class InterFace:
                 if wm is None:
                     messagebox.showwarning('Recover','No watermark patches could be recovered.')
                     return
-                tmp=Path(sus).with_name(f"{Path(sus).stem}_recovered_wm.png")
+                base=Path(sus).stem
+                tmp=make_dir(base=base,typ="recovered_wm",ext=".png")
                 cv.imwrite(str(tmp),wm)
                 self._show_image(str(tmp),type='out')
                 messagebox.showinfo('Recover',f"Recovered watermark saved to:\n{tmp}")
@@ -251,6 +261,6 @@ class InterFace:
             messagebox.showerror('Error',str(e))
     def run(self):
         self.root.mainloop()
-
+###MAIN class####
 if __name__=='__main__':
     InterFace(tk.Tk()).run()
