@@ -16,6 +16,7 @@ import os, sys
 
 import tkinter as tk
 from tkinter import filedialog, messagebox
+from PIL import Image, ImageTk
 
 
 SEG_SIZE=5
@@ -122,6 +123,13 @@ class Detector:
         self.suspect=suspect
         self.meta=meta
     def detect(self)->Dict[str,Any]:
+        '''
+        returns:
+        tampered":not auth,
+        "mismatches":len(mism)
+        ,"inlier":round(inl,3),
+        "overlay":str(overlay_path) 
+        '''
         auth,mism,inl=Verifier(self.suspect,self.meta).verify()
         overlay_path=""
         if mism:
@@ -137,11 +145,24 @@ class InterFace:
     def __init__(self,root:tk.Tk):
         self.root=root
         root.title('Detecot Eye')
-        self.root.minsize(1000,1000)
+        self.root.minsize(1000,600)
+        self._in_photo=None
+        self._out_photo=None
+        prv=tk.Frame(root)
+        prv.pack(fill=tk.BOTH,expand=True,padx=20,pady=20)
+        self.in_label=tk.Label(prv,text='Selected image\n(appears here)',compound=tk.TOP,justify=tk.CENTER)
+        self.out_label=tk.Label(prv,text='Generated image\n(appears here)',compound=tk.TOP,justify=tk.CENTER)
+        self.in_label.grid(row=0,column=0,sticky='nsew',padx=10)
+        self.out_label.grid(row=0, column=1,sticky='nsew',padx=10)
+        prv.columnconfigure(0, weight=1)
+        prv.columnconfigure(1, weight=1)
+        prv.rowconfigure(0,  weight=1)
         for text,fun in [('Embed',self.embed),('Verify',self.verify),('Detect',self.detect)]:
-            tk.Button(root,text=text,width=22,command=fun).pack(padx=10,pady=6)
+            tk.Button(root,text=text,width=22,command=fun).pack(padx=130,side=tk.LEFT)
     def pick(self,title,typ='Image'):
-        return filedialog.askopenfilename(title=title,filetypes=[(f'{typ} files','*.png;*.tif')]) #only tif and png files are allowed
+        path=filedialog.askopenfilename(title=title,filetypes=[(f'{typ} files','*.png;*.tif')]) #only tif and png files are allowed
+        if path and typ=='Image':self._show_image(path,type='in')
+        return path
     def meta(self):
         return filedialog.askopenfilename(title='Meta JSON',filetypes=[('JSON','*.json')]) if META_DATA is None else META_DATA #use json if metatdata is not preseverd in the memory
     def embed(self):
@@ -150,6 +171,7 @@ class InterFace:
         if carrier and watermark:
             try:
                 emb=Embedder(carrier,watermark).embed()
+                self._show_image(emb['img'],type='out')
                 messagebox.showinfo('Embed',f"Watermarked: {emb['img']}\nMeta: {emb['meta']}")
             except Exception as e:
                 messagebox.showerror('Error',str(e))
@@ -168,9 +190,24 @@ class InterFace:
         if sus and meta:
             try: 
                 res=Detector(sus,meta).detect()
+                self._show_image(res['overlay'],type='out')
                 messagebox.showinfo('Detect',json.dumps(res,indent=2))
             except Exception as e:
                 messagebox.showerror('Error',str(e))
+    def _show_image(self,src:str,type:str='in')->None:
+        try:
+            img=Image.open(src)
+            img.thumbnail((600,600))
+            photo=ImageTk.PhotoImage(img)
+            if type=='in':
+                self._in_photo=photo
+                self.in_label.config(image=photo,text="")
+            else:
+                self._out_photo=photo
+                self.out_label.config(image=photo,text="")
+        except Exception as e:
+            messagebox.showerror('Error',str(e))
+    
     def run(self):
         self.root.mainloop()
 
