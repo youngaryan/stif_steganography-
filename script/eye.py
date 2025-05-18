@@ -15,8 +15,8 @@ import numpy as np
 import os, sys
 
 import tkinter as tk
-from tkinter import filedialog, messagebox
-from PIL import Image, ImageTk
+from tkinter import filedialog,messagebox,ttk
+from PIL import Image,ImageTk
 ###Golbal VArables###
 SEG_SIZE=9
 CHANNEL=0 # blue
@@ -181,6 +181,8 @@ class InterFace:
         self.root=root
         root.title('Detecot Eye')
         self.root.minsize(1000,600)
+        self.progress=ttk.Progressbar(root,orient="horizontal",mode="determinate",length=400)
+        self.progress.pack(pady=(5,2))
         self._in_photo=None
         self._out_photo=None
         prv=tk.Frame(root)
@@ -193,7 +195,7 @@ class InterFace:
         prv.columnconfigure(1, weight=1)
         prv.rowconfigure(0,  weight=1)
         for text,fun in [('Embed',self.embed),('Verify',self.verify),('Detect',self.detect),('Recover',self.recover)]:
-            tk.Button(root,text=text,width=22,command=fun,).pack(padx=45,side=tk.LEFT,)
+            ttk.Button(root,text=text,width=20,command=fun,).pack(padx=45,side=tk.LEFT,)
     def pick(self,title,typ='Image'):
         path=filedialog.askopenfilename(title=title,filetypes=[(f'{typ} files','*.png;*.tif')]) #only tif and png files are allowed
         if path and typ=='Image':self._show_image(path,type='in')
@@ -205,8 +207,12 @@ class InterFace:
         watermark=self.pick('Watermark')#
         if carrier and watermark:
             try:
+                self.set_progress(10,"Starting embedding...")
                 emb=Embedder(carrier,watermark).embed()
+                self.set_progress(60,"Watermark embedded...")
                 self._show_image(emb['img'],type='out')
+                self.set_progress(100,"Completed.")
+                self.root.after(1000,lambda:self.set_progress(0))
                 messagebox.showinfo('Embed',f"Watermarked: {emb['img']}\nMeta: {emb['meta']}")
             except Exception as e:
                 messagebox.showerror('Error',str(e))
@@ -215,7 +221,10 @@ class InterFace:
         meta=self.meta()
         if sus and meta:
             try:
+                self.set_progress(20,"Starting verifying...")
                 auth,_,inl=Verifier(sus,meta).verify()
+                self.set_progress(100,"Verification complete.")
+                self.root.after(1000,lambda:self.set_progress(0))
                 messagebox.showinfo('Verify','AUTHENTIC' if auth else 'TAMPERED'+f"\nInliers:{inl:.2f}")
             except Exception as e:
                 messagebox.showerror('Error',str(e))
@@ -223,9 +232,13 @@ class InterFace:
         sus=self.pick('Suspect')
         meta=self.meta()
         if sus and meta:
-            try: 
+            try:
+                self.set_progress(10,"Analyzing image...")
                 res=Detector(sus,meta).detect()
+                self.set_progress(80,"Rendering overlay...")
                 self._show_image(res['overlay'],type='out')
+                self.set_progress(100,"Detection complete.")
+                self.root.after(1000,lambda:self.set_progress(0))
                 messagebox.showinfo('Detect',json.dumps(res,indent=2))
             except Exception as e:
                 messagebox.showerror('Error',str(e))
@@ -234,14 +247,18 @@ class InterFace:
         meta=self.meta()
         if sus and meta:
             try:
+                self.set_progress(10,"Recovering watermark...")
                 ver=Verifier(sus,meta)
                 wm=ver.extract_watermark(upscale=True)
                 if wm is None:
+                    self.set_progress(0)    
                     messagebox.showwarning('Recover','No watermark patches could be recovered.')
                     return
                 base=Path(sus).stem
                 tmp=make_dir(base=base,typ="recovered_wm",ext=".png")
                 cv.imwrite(str(tmp),wm)
+                self.set_progress(100, "Watermark recovered.")
+                self.root.after(1000, lambda: self.set_progress(0))
                 self._show_image(str(tmp),type='out')
                 messagebox.showinfo('Recover',f"Recovered watermark saved to:\n{tmp}")
             except Exception as e:
@@ -259,6 +276,9 @@ class InterFace:
                 self.out_label.config(image=photo,text="")
         except Exception as e:
             messagebox.showerror('Error',str(e))
+    def set_progress(self,value:int,text:str=""):
+        self.progress['value']=value
+        self.root.update_idletasks()
     def run(self):
         self.root.mainloop()
 ###MAIN class####
