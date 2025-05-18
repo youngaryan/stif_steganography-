@@ -20,32 +20,32 @@ from PIL import Image, ImageTk
 
 
 SEG_SIZE=9
-CHANNEL= 0 # blue
-META_DATA = None #to store metadata if none will load json
+CHANNEL=0 # blue
+META_DATA=None #to store metadata if none will load json
 
 def binarise(img: np.ndarray) -> np.ndarray:
     '''convert a grayscale image to black and white'''
-    return (img > 127).astype(np.uint8)
+    return (img>127).astype(np.uint8)
 class Embedder:
     '''embeds a watermark into a carrier image.'''
-    def __init__(self, carrier: str, watermark: str, max_pts: int = 400):
+    def __init__(self,carrier:str,watermark:str,max_pts:int=400):
         self.carrier=carrier
         self.watermark=watermark
         self.max=max_pts
         self.sift=cv.SIFT_create()
     def _points(self, gray_carrier: np.ndarray) -> List[cv.KeyPoint]:
         '''returns the strongest non over-lapping SIFT heypoints'''
-        kps, _=self.sift.detectAndCompute(gray_carrier, None)
+        kps, _=self.sift.detectAndCompute(gray_carrier,None)
         occup = np.zeros(gray_carrier.shape,dtype=bool)
         selc=[]
         h=SEG_SIZE//2
         for kp in sorted(kps,key=lambda k:-k.response):
             x,y = map(int,map(round,kp.pt))
-            if x-h<0 or y-h<0 or x+h>=gray_carrier.shape[1] or y+h>=gray_carrier.shape[0]: continue
-            if occup[y-h:y+h+1,x-h:x+h+1].any(): continue
+            if x-h<0 or y-h<0 or x+h>=gray_carrier.shape[1] or y+h>=gray_carrier.shape[0]:continue
+            if occup[y-h:y+h+1,x-h:x+h+1].any():continue
             occup[y-h:y+h+1,x-h:x+h+1]=True
             selc.append(kp)
-            if len(selc)>=self.max: break
+            if len(selc)>=self.max:break
         return selc
     def embed(self)->Dict[str,str]:
         '''
@@ -62,8 +62,7 @@ class Embedder:
             x,y=map(int,map(round,kp.pt))
             for dy in range(-half,half+1):
                 for dx in range(-half,half+1):
-                    if dy+half>=segment.shape[1] or dx+half>=segment.shape[0] or dy+half<0 or dx+half<0:
-                        continue
+                    if dy+half>=segment.shape[1] or dx+half>=segment.shape[0] or dy+half<0 or dx+half<0:continue
                     bit=int(segment[dy+half,dx+half])
                     px=out[y+dy,x+dx,CHANNEL]
                     out[y+dy,x+dx,CHANNEL]=(px&~1)|bit
@@ -99,10 +98,10 @@ class Verifier:
         for ref in self.meta['keypoints']:
             ref_pt=np.array(ref['pt'])
             idx=int(np.argmin([np.linalg.norm(np.array(k.pt)-ref_pt) for k in kps])) if kps else -1
-            if idx==-1: continue
+            if idx==-1:continue
             kp=kps[idx]
             x,y=map(int,map(round,kp.pt))
-            if x-h<0 or y-h<0 or x+h>=col.shape[1] or y+h>=col.shape[0]: continue
+            if x-h<0 or y-h<0 or x+h>=col.shape[1] or y+h>=col.shape[0]:continue
             patch=(col[y-h:y+h+1,x-h:x+h+1,self.color_chan]&1)
             if np.count_nonzero(patch ^ self.segment)/(SEG_SIZE*SEG_SIZE)>self.error_tolerance : mism.append((x,y))
             src.append(ref_pt)
@@ -133,12 +132,10 @@ class Verifier:
             kp=kps[idx]
             x,y= map(int,map(round,kp.pt))
             if (x-half<0 or y-half<0 or
-                x+half>=col.shape[1] or y+half>=col.shape[0]):
-                continue
+                x+half>=col.shape[1] or y+half>=col.shape[0]):continue
             patch=(col[y-half:y+half+1,x-half:x+half+1,self.color_chan]&1)
             patches.append(patch)
-        if not patches:
-            return None
+        if not patches:return None
         stack=np.stack(patches,axis=0)
         votes=(stack.sum(axis=0)>(len(patches)/2))
         recovered=votes.astype(np.uint8)*255
@@ -255,7 +252,5 @@ class InterFace:
     def run(self):
         self.root.mainloop()
 
-
 if __name__=='__main__':
     InterFace(tk.Tk()).run()
-    
