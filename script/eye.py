@@ -19,14 +19,13 @@ from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 
 
-SEG_SIZE=5
+SEG_SIZE=9
 CHANNEL= 0 # blue
 META_DATA = None #to store metadata if none will load json
 
 def binarise(img: np.ndarray) -> np.ndarray:
     '''convert a grayscale image to black and white'''
     return (img > 127).astype(np.uint8)
-
 class Embedder:
     '''embeds a watermark into a carrier image.'''
     def __init__(self, carrier: str, watermark: str, max_pts: int = 400):
@@ -34,7 +33,6 @@ class Embedder:
         self.watermark=watermark
         self.max=max_pts
         self.sift=cv.SIFT_create()
-
     def _points(self, gray_carrier: np.ndarray) -> List[cv.KeyPoint]:
         '''returns the strongest non over-lapping SIFT heypoints'''
         kps, _=self.sift.detectAndCompute(gray_carrier, None)
@@ -49,7 +47,6 @@ class Embedder:
             selc.append(kp)
             if len(selc)>=self.max: break
         return selc
-
     def embed(self)->Dict[str,str]:
         '''
         embed the black and white watermark into the least significant bits (LSBs) of the carrier image at selected SIFT keypoints.
@@ -59,12 +56,14 @@ class Embedder:
         kps=self._points(gray_carrier)
         segment=cv.resize(binarise(cv.imread(self.watermark,cv.IMREAD_GRAYSCALE)),(SEG_SIZE,SEG_SIZE),cv.INTER_NEAREST)
         half=SEG_SIZE//2
-        meta={"channel":CHANNEL,"segment":segment.tolist(),"keypoints":[]}
+        meta={"channel":CHANNEL,"segment":segment.tolist(),"keypoints":[],}
         out=col.copy()
         for kp in kps:
             x,y=map(int,map(round,kp.pt))
             for dy in range(-half,half+1):
                 for dx in range(-half,half+1):
+                    if dy+half>=segment.shape[1] or dx+half>=segment.shape[0] or dy+half<0 or dx+half<0:
+                        continue
                     bit=int(segment[dy+half,dx+half])
                     px=out[y+dy,x+dx,CHANNEL]
                     out[y+dy,x+dx,CHANNEL]=(px&~1)|bit
@@ -77,7 +76,6 @@ class Embedder:
         global META_DATA
         META_DATA=meta
         return {"img":img,"meta":m}
-    
 class Verifier:
     '''verify suspected carrier image of carrying a watermark '''
     def __init__(self,suspect:str,meta:str,error_tolerance :float=0.2):
@@ -115,6 +113,38 @@ class Verifier:
             if mask is not None: inl=mask.sum()/mask.size
         auth=len(mism)<=int(len(src)*self.error_tolerance ) and inl>0.6
         return auth,mism,inl
+    def extract_watermark(self, upscale: bool = True) -> np.ndarray | None:
+        """
+        reconstruct the embedded 5x5 watermark pattern by majority-voting
+        across all matched key-points.
+        """
+        col=cv.imread(self.suspect)
+        if col is None:
+            raise FileNotFoundError(self.suspect)
+        gray=cv.cvtColor(col, cv.COLOR_BGR2GRAY)
+        kps,_=self.sift.detectAndCompute(gray, None)
+        half=SEG_SIZE//2
+        patches=[]
+        for ref in self.meta["keypoints"]:
+            ref_pt=np.array(ref["pt"])
+            if not kps:
+                break
+            idx=int(np.argmin([np.linalg.norm(np.array(k.pt)-ref_pt)for k in kps]))
+            kp=kps[idx]
+            x,y= map(int,map(round,kp.pt))
+            if (x-half<0 or y-half<0 or
+                x+half>=col.shape[1] or y+half>=col.shape[0]):
+                continue
+            patch=(col[y-half:y+half+1,x-half:x+half+1,self.color_chan]&1)
+            patches.append(patch)
+        if not patches:
+            return None
+        stack=np.stack(patches,axis=0)
+        votes=(stack.sum(axis=0)>(len(patches)/2))
+        recovered=votes.astype(np.uint8)*255
+        if upscale:
+            recovered=cv.resize(recovered,(SEG_SIZE*3,SEG_SIZE*3))
+        return recovered
 class Detector:
     '''
     detects mismatches on suspected carrier, if mismatches exist it draws a red circle around them. 
@@ -139,7 +169,6 @@ class Detector:
             cv.imwrite(str(overlay_path),img)
         return {"tampered":not auth,"mismatches":len(mism),"inlier":round(inl,3),"overlay":str(overlay_path)}
 
-
 class InterFace:
     '''simple GUI for with three buttons'''
     def __init__(self,root:tk.Tk):
@@ -157,8 +186,8 @@ class InterFace:
         prv.columnconfigure(0, weight=1)
         prv.columnconfigure(1, weight=1)
         prv.rowconfigure(0,  weight=1)
-        for text,fun in [('Embed',self.embed),('Verify',self.verify),('Detect',self.detect)]:
-            tk.Button(root,text=text,width=22,command=fun).pack(padx=130,side=tk.LEFT)
+        for text,fun in [('Embed',self.embed),('Verify',self.verify),('Detect',self.detect),('Recover',self.recover)]:
+            tk.Button(root,text=text,width=22,command=fun,).pack(padx=45,side=tk.LEFT,)
     def pick(self,title,typ='Image'):
         path=filedialog.askopenfilename(title=title,filetypes=[(f'{typ} files','*.png;*.tif')]) #only tif and png files are allowed
         if path and typ=='Image':self._show_image(path,type='in')
@@ -194,6 +223,22 @@ class InterFace:
                 messagebox.showinfo('Detect',json.dumps(res,indent=2))
             except Exception as e:
                 messagebox.showerror('Error',str(e))
+    def recover(self):
+        sus=self.pick('Suspect')
+        meta=self.meta()
+        if sus and meta:
+            try:
+                ver=Verifier(sus,meta)
+                wm=ver.extract_watermark(upscale=True)
+                if wm is None:
+                    messagebox.showwarning('Recover','No watermark patches could be recovered.')
+                    return
+                tmp=Path(sus).with_name(f"{Path(sus).stem}_recovered_wm.png")
+                cv.imwrite(str(tmp),wm)
+                self._show_image(str(tmp),type='out')
+                messagebox.showinfo('Recover',f"Recovered watermark saved to:\n{tmp}")
+            except Exception as e:
+                messagebox.showerror('Error',str(e))
     def _show_image(self,src:str,type:str='in')->None:
         try:
             img=Image.open(src)
@@ -207,7 +252,6 @@ class InterFace:
                 self.out_label.config(image=photo,text="")
         except Exception as e:
             messagebox.showerror('Error',str(e))
-    
     def run(self):
         self.root.mainloop()
 
