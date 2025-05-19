@@ -14,7 +14,7 @@ EyeDetector allows users to:
 - Detect and visualize mismatched or tampered watermark regions.
 - Recover the original watermark using majority voting.
 
-The watermark is embedded in the **(LSBs)** of the **blue channel** at **non-overlapping SIFT keypoints**, providing watermarking embedding, verification and temper detection.
+The watermark is embedded in the **(LSBs)** of a **random channel** at **non-overlapping SIFT keypoints**, providing watermarking embedding, verification and temper detection.
 
 ---
 
@@ -24,6 +24,7 @@ The watermark is embedded in the **(LSBs)** of the **blue channel** at **non-ove
 - **Watermark Verification** using geometric homography and bit-pattern similarity.
 - **Tamper Detection** overlays the tempered points with red circle and generate mismatch analysis.
 - **Watermark Recovery** recovers the water mark using majority technique voting.
+- **Segment Size** allows user to choose segement size for embedding.
 - **Simple GUI** with image preview and progress feedback.
 
 ---
@@ -61,6 +62,7 @@ The interface provides buttons for:
 - `Verify`: Check image authenticity.
 - `Detect`: Highlight tampered regions.
 - `Recover`: Reconstruct the watermark.
+- `Segement Size Chooser`: Allows user to choose segment size.
 
 The GUI also includes progress feedback and real-time image previews.
 
@@ -98,7 +100,7 @@ python eye.py
 
 Once ran you will see a simple GUI which from there using provided buttons you can embed a watermark inside a carrier image, verify, detect temperments, or recover a watermark.
 
-![image](https://github.com/user-attachments/assets/9beac24a-33f1-4592-b292-3ae1665b751c)
+![image](https://github.com/user-attachments/assets/2e16ca4f-3f1e-42ee-aafa-d53750b687d3)
 
 
 **Embed Watermark:**
@@ -116,10 +118,9 @@ Once ran you will see a simple GUI which from there using provided buttons you c
     - Otherwise will return Tempered and the Inliers value [0,1].
 
 <p float="left">
-  <img src="https://github.com/user-attachments/assets/f4d859b1-d89c-4119-b1d4-c6005119a380" width="300" height="200" />
-  <img src="https://github.com/user-attachments/assets/dfe1eac1-312c-434f-8a3f-92ff1579e742" width="300" height="200" />
+  <img src="https://github.com/user-attachments/assets/7666486e-5c74-4c66-8536-60f4d6950c83" width="700" height="400" />
+  <img src="https://github.com/user-attachments/assets/f245e957-c1ed-482f-a551-58c9f5d1b051" width="700" height="400" />
 </p>
-
 
 **Temper Detectore:**
 1. Select a suspected image (`.png` or `.tiff`).
@@ -129,17 +130,17 @@ Once ran you will see a simple GUI which from there using provided buttons you c
 3. The program will generate:
    - A overlay image which has red circle around mismatch points: `res/<name>_overlay.png`
 <p float="left">
-  <img src="https://github.com/user-attachments/assets/b6ae53b7-9df2-4ceb-b24e-4d67fc8ec86a" width="300" height="200" />
-  <img src="https://github.com/user-attachments/assets/6a87e155-0256-495f-aab4-90c40c483c3a" width="300" height="200" />
+  <img src="https://github.com/user-attachments/assets/a9568c87-6cae-4305-8cba-e8aea381a7e1" width="700" height="500" />
+  <img src="https://github.com/user-attachments/assets/1d54cf49-8523-4965-8fe2-f217b836d80b" width="700" height="500" />
 </p>
 
 **Recover Watermark Image:**
 1. Select a suspected image (`.png` or `.tiff`).
 2. Select the metadata file
     - If the image is verified, the program will return the path of the recovered image.
-    - Otherwise will error.
+    - Otherwise will raise an error.
 <p float="left">
-  <img src="https://github.com/user-attachments/assets/b1f5dd1a-a58d-4d1d-8201-8524abbbc816" width="400" height="200" />
-  <img src="https://github.com/user-attachments/assets/16a0f642-c325-46d7-8039-951c87e0e031" width="400" height="200" />
+  <img src="https://github.com/user-attachments/assets/86e38e8c-6f30-4aef-ac04-adb0bd21420a" width="400" height="200" />
+  <img src="https://github.com/user-attachments/assets/e19f1c8b-9249-4e42-8bcb-a98e3a700ee7" width="400" height="200" />
 </p>
 
