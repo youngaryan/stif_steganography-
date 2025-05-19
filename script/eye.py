@@ -37,11 +37,12 @@ def binarise(img: np.ndarray)->np.ndarray:
 ###Embeder class####
 class Embedder:
     '''embeds a watermark into a carrier image.'''
-    def __init__(self,carrier:str,watermark:str,max_pts:int=400):
+    def __init__(self,carrier:str,watermark:str,max_pts:int=400,seg_size:int=SEG_SIZE):
         self.carrier=carrier
         self.watermark=watermark
         self.max=max_pts
         self.sift=cv.SIFT_create()
+        self.seg_size=seg_size if seg_size%2!=0 else seg_size+1
     def _points(self, gray_carrier: np.ndarray)->Tuple[List[cv.KeyPoint],np.ndarray]:
         '''returns the strongest non over-lapping SIFT heypoints with their descriptiors'''
         kps,desc=self.sift.detectAndCompute(gray_carrier,None)
@@ -49,7 +50,7 @@ class Embedder:
         pairs=sorted(zip(kps,desc),key=lambda k:-k[0].response)
         occup = np.zeros(gray_carrier.shape,dtype=bool)
         selc,selc_descs =[],[]
-        h=SEG_SIZE//2
+        h=self.seg_size//2
         for kp, de in pairs:
             x,y = map(int,map(round,kp.pt))
             if x-h<0 or y-h<0 or x+h>=gray_carrier.shape[1] or y+h>=gray_carrier.shape[0]:continue
@@ -67,9 +68,9 @@ class Embedder:
         if col is None:raise FileNotFoundError(self.carrier)
         gray_carrier=cv.cvtColor(col,cv.COLOR_BGR2GRAY)
         kps,desc=self._points(gray_carrier)
-        segment=cv.resize(binarise(cv.imread(self.watermark,cv.IMREAD_GRAYSCALE)),(SEG_SIZE,SEG_SIZE),cv.INTER_NEAREST)
-        half=SEG_SIZE//2
-        meta={"segment":segment.tolist(),"keypoints":[],}
+        segment=cv.resize(binarise(cv.imread(self.watermark,cv.IMREAD_GRAYSCALE)),(self.seg_size,self.seg_size),cv.INTER_NEAREST)
+        half=self.seg_size//2
+        meta={"segment":segment.tolist(),"keypoints":[],"seg_size":self.seg_size}
         out=col.copy()
         for kp, de in zip(kps,desc):
             ch=np.random.choice(3)
@@ -95,6 +96,7 @@ class Verifier:
         self.meta=json.load(open(meta));
         self.error_tolerance =error_tolerance 
         self.segment=np.array(self.meta['segment'],np.uint8)
+        self.seg_size:int=self.meta['seg_size']
         self.sift=cv.SIFT_create()
         self._auth_result=None
     def _match_desc(self,ref:np.ndarray,sus:np.ndarray)->List[int|None]:
@@ -129,14 +131,14 @@ class Verifier:
         match_res=self._match_desc(ref=ref_desc,sus=desc)
         mism:List[Tuple[int,int]]=[]
         src,dst=[],[]
-        h=SEG_SIZE//2
+        h=self.seg_size//2
         for ref_p,chanel,matc_idx in zip(ref_pts,ref_channels,match_res):
             if matc_idx is None:continue #the point is lost after editing
             kp=kps[matc_idx]
             x,y=map(int,map(round,kp.pt))
             if x-h<0 or y-h<0 or x+h>=col.shape[1] or y+h>=col.shape[0]:continue
             patch=(col[y-h:y+h+1,x-h:x+h+1,chanel]&1)
-            if np.count_nonzero(patch^self.segment)/(SEG_SIZE*SEG_SIZE)>self.error_tolerance:mism.append((x,y))
+            if np.count_nonzero(patch^self.segment)/(self.seg_size*self.seg_size)>self.error_tolerance:mism.append((x,y))
             src.append(ref_p)
             dst.append(kp.pt)
         inl=1.0
@@ -161,7 +163,7 @@ class Verifier:
         ref_desc=np.array([kp["desc"] for kp in self.meta["keypoints"]],dtype=np.float32)
         ref_channels=[kp["channel"] for kp in self.meta["keypoints"]]
         match_res=self._match_desc(ref=ref_desc,sus=desc)
-        half=SEG_SIZE//2
+        half=self.seg_size//2
         patches:List[np.ndarray]=[]
         for chanel,matc_idx,in zip(ref_channels,match_res):
             if matc_idx is None:continue #the point is lost after editing
@@ -176,7 +178,7 @@ class Verifier:
         votes=(stack.sum(axis=0)>(len(patches)/2))
         recovered=votes.astype(np.uint8)*255
         if upscale:
-            recovered=cv.resize(recovered,(SEG_SIZE*3,SEG_SIZE*3),cv.INTER_NEAREST)
+            recovered=cv.resize(recovered,(self.seg_size*3,self.seg_size*3),cv.INTER_NEAREST)
         return recovered
 ###Detector class####
 class Detector:
@@ -196,7 +198,7 @@ class Detector:
         '''
         auth,mism,inl=Verifier(self.suspect,self.meta).verify()
         overlay_path=""
-        if mism:
+        if len(mism)>0:
             img=cv.imread(self.suspect)
             [cv.circle(img,(x,y),8,(0,0,255),2) for x,y in mism]
             base=Path(self.suspect).stem
@@ -225,6 +227,13 @@ class InterFace:
         prv.rowconfigure(0,  weight=1)
         for text,fun in [('Embed',self.embed),('Verify',self.verify),('Detect',self.detect),('Recover',self.recover)]:
             ttk.Button(root,text=text,width=20,command=fun,).pack(padx=65,side=tk.LEFT,)
+        self.seg_var=tk.IntVar(value=SEG_SIZE)
+        seg_frame=tk.Frame(self.root)
+        seg_frame.pack(pady=10)
+
+        tk.Label(seg_frame, text="Segment size (px)").grid(row=0, column=0, sticky="w")
+        tk.Spinbox(seg_frame, from_=1, to=21, increment=2, textvariable=self.seg_var, width=4).grid(row=0, column=1)#avoid even seg numbers
+
     def pick(self,title,typ='Image'):
         path=filedialog.askopenfilename(title=title,filetypes=[(f'{typ} files','*.png;*.tif')]) #only tif and png files are allowed
         if path and typ=='Image':self._show_image(path,type='in')
@@ -237,7 +246,7 @@ class InterFace:
         if carrier and watermark:
             try:
                 self.set_progress(10,"Starting embedding...")
-                emb=Embedder(carrier,watermark).embed()
+                emb=Embedder(carrier,watermark,seg_size=int(self.seg_var.get())).embed()
                 self.set_progress(60,"Watermark embedded...")
                 self._show_image(emb['img'],type='out')
                 self.set_progress(100,"Completed.")
@@ -293,6 +302,8 @@ class InterFace:
                 messagebox.showerror('Error',str(e))
             self.root.after(1000, lambda: self.set_progress(0))
     def _show_image(self,src:str,type:str='in')->None:
+        if src is None or src=='':
+            return
         try:
             img=Image.open(src)
             img.thumbnail((600,600))
