@@ -242,65 +242,69 @@ class InterFace:
         return filedialog.askopenfilename(title='Meta JSON',filetypes=[('JSON','*.json')])
     def embed(self):
         carrier=self.pick('Carrier')
-        watermark=self.pick('Watermark')#
-        if carrier and watermark:
-            try:
-                self.set_progress(10,"Starting embedding...")
-                emb=Embedder(carrier,watermark,seg_size=int(self.seg_var.get())).embed()
-                self.set_progress(60,"Watermark embedded...")
-                self._show_image(emb['img'],type='out')
-                self.set_progress(100,"Completed.")
-                messagebox.showinfo('Embed',f"Watermarked: {emb['img']}\nMeta: {emb['meta']}")
-            except Exception as e:
-                messagebox.showerror('Error',str(e))
-            self.root.after(1000,lambda:self.set_progress(0))
+        if carrier is None or carrier=='':return
+        watermark=self.pick('Watermark')
+        if watermark is None or watermark=='':return
+        try:
+            self.set_progress(10,"Starting embedding...")
+            emb=Embedder(carrier,watermark,seg_size=int(self.seg_var.get())).embed()
+            self.set_progress(60,"Watermark embedded...")
+            self._show_image(emb['img'],type='out')
+            self.set_progress(100,"Completed.")
+            messagebox.showinfo('Embed',f"Watermarked: {emb['img']}\nMeta: {emb['meta']}")
+        except Exception as e:
+            messagebox.showerror('Error',str(e))
+        self.root.after(1000,lambda:self.set_progress(0))
     def verify(self):
         sus=self.pick('Suspect')
+        if sus is None or sus=='':return
         meta=self.meta()
-        if sus and meta:
-            try:
-                self.set_progress(20,"Starting verifying...")
-                auth,_,inl=Verifier(sus,meta).verify()
-                self.set_progress(100,"Verification complete.")
-                messagebox.showinfo('Verify','AUTHENTIC' if auth else 'TAMPERED'+f"\nInliers:{inl:.2f}")
-            except Exception as e:
-                messagebox.showerror('Error',str(e))
-            self.root.after(1000,lambda:self.set_progress(0))
+        if meta is None or meta=='':return
+        try:
+            self.set_progress(20,"Starting verifying...")
+            auth,_,inl=Verifier(sus,meta).verify()
+            self.set_progress(100,"Verification complete.")
+            messagebox.showinfo('Verify','AUTHENTIC' if auth else 'TAMPERED'+f"\nInliers:{inl:.2f}")
+        except Exception as e:
+            messagebox.showerror('Error',str(e))
+        self.root.after(1000,lambda:self.set_progress(0))
     def detect(self):
         sus=self.pick('Suspect')
+        if sus is None or sus=='':return
         meta=self.meta()
-        if sus and meta:
-            try:
-                self.set_progress(10,"Analyzing image...")
-                res=Detector(sus,meta).detect()
-                self.set_progress(80,"Rendering overlay...")
-                self._show_image(res['overlay'],type='out')
-                self.set_progress(100,"Detection complete.")
-                messagebox.showinfo('Detect',json.dumps(res,indent=2))
-            except Exception as e:
-                messagebox.showerror('Error',str(e))
-            self.root.after(1000,lambda:self.set_progress(0))
+        if meta is None or meta=='':return
+        try:
+            self.set_progress(10,"Analyzing image...")
+            res=Detector(sus,meta).detect()
+            self.set_progress(80,"Rendering overlay...")
+            self._show_image(res['overlay'],type='out')
+            self.set_progress(100,"Detection complete.")
+            messagebox.showinfo('Detect',json.dumps(res,indent=2))
+        except Exception as e:
+            messagebox.showerror('Error',str(e))
+        self.root.after(1000,lambda:self.set_progress(0))
     def recover(self):
         sus=self.pick('Suspect')
+        if sus is None or sus=='':return
         meta=self.meta()
-        if sus and meta:
-            try:
-                self.set_progress(10,"Recovering watermark...")
-                ver=Verifier(sus,meta)
-                wm=ver.extract_watermark(upscale=True)
-                if wm is None:
-                    self.set_progress(0)    
-                    messagebox.showwarning('Recover','No watermark patches could be recovered.')
-                    return
-                base=Path(sus).stem
-                tmp=make_dir(base=base,typ="recovered_wm",ext=".png")
-                cv.imwrite(str(tmp),wm)
-                self.set_progress(100, "Watermark recovered.")
-                self._show_image(str(tmp),type='out')
-                messagebox.showinfo('Recover',f"Recovered watermark saved to:\n{tmp}")
-            except Exception as e:
-                messagebox.showerror('Error',str(e))
-            self.root.after(1000, lambda: self.set_progress(0))
+        if meta is None or meta=='':return
+        try:
+            self.set_progress(10,"Recovering watermark...")
+            ver=Verifier(sus,meta)
+            wm=ver.extract_watermark(upscale=True)
+            if wm is None:
+                self.set_progress(0)    
+                messagebox.showwarning('Recover','No watermark patches could be recovered.')
+                return
+            base=Path(sus).stem
+            tmp=make_dir(base=base,typ="recovered_wm",ext=".png")
+            cv.imwrite(str(tmp),wm)
+            self.set_progress(100, "Watermark recovered.")
+            self._show_image(str(tmp),type='out')
+            messagebox.showinfo('Recover',f"Recovered watermark saved to:\n{tmp}")
+        except Exception as e:
+            messagebox.showerror('Error',str(e))
+        self.root.after(1000, lambda: self.set_progress(0))
     def _show_image(self,src:str,type:str='in')->None:
         if src is None or src=='':
             return
