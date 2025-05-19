@@ -71,3 +71,53 @@ The GUI also includes progress feedback and real-time image previews.
 Install dependencies (opencv-python, numpy, Pillow):
 ```bash
 pip install -r requirements.txt
+```
+
+---
+## Project File Structure
+
+```bash
+stif_steganography-/
+├── script/
+│   ├── eye.py  #brain of the program
+├── images/  #sample carrier and watermark image
+│   ├── che.png
+│   ├── watermark.png
+├── res/  #folder which the genrated data(images and metadata) will be stored at
+├── requirements.txt
+├── .gitignore
+└── README.md
+```
+
+---
+## Example Usage
+Inside your tereminal run:
+```bash
+python eye.py
+```
+
+Once ran you will see a simple GUI which from there using provided buttons you can embed a watermark inside a carrier image, verify, detect temperments, or recover a watermark.
+
+![image](https://github.com/user-attachments/assets/9beac24a-33f1-4592-b292-3ae1665b751c)
+
+
+**Embed Watermark:**
+
+1. Select a carrier image (`.png` or `.tiff`).
+2. Select a binary watermark image.
+3. The program will generate:
+   - A modified image: `res/<name>_modified.png`
+   - A metadata file: `res/<name>_meta.json`
+
+**Verify Image:**
+1. Select a suspected image (`.png` or `.tiff`).
+2. Select the metadata file
+
+<p float="left">
+  <img src="https://github.com/user-attachments/assets/f4d859b1-d89c-4119-b1d4-c6005119a380" width="45%" />
+  <img src="https://github.com/user-attachments/assets/ba0106da-b515-4bd8-b13e-d2e7fbd8460c" width="45%", height="10%" />
+</p>
+
+
+
+
