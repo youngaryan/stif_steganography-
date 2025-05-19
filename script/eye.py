@@ -19,10 +19,13 @@ from tkinter import filedialog,messagebox,ttk
 from PIL import Image,ImageTk
 ###Golbal VArables###
 SEG_SIZE=9
-CHANNEL=0 # blue
 META_DATA=None #to store metadata if none will load json
 #### HELPER FUNCTIONS####
 def make_dir(path_n_fldr:str="res",base:str="che",typ="modifed",ext:str=".png")->str:
+    '''
+    generate folder if it doesn't exsist
+    will be used to generate file names depends on and thier base name, type, and extention.
+    '''
     ndir=Path(path_n_fldr)
     ndir.mkdir(exist_ok=True)
     file_name=f"{base}_{typ}{ext}"
@@ -62,17 +65,18 @@ class Embedder:
         kps=self._points(gray_carrier)
         segment=cv.resize(binarise(cv.imread(self.watermark,cv.IMREAD_GRAYSCALE)),(SEG_SIZE,SEG_SIZE),cv.INTER_NEAREST)
         half=SEG_SIZE//2
-        meta={"channel":CHANNEL,"segment":segment.tolist(),"keypoints":[],}
+        meta={"segment":segment.tolist(),"keypoints":[],}
         out=col.copy()
         for kp in kps:
+            ch=np.random.choice(3)
             x,y=map(int,map(round,kp.pt))
             for dy in range(-half,half+1):
                 for dx in range(-half,half+1):
                     if dy+half>=segment.shape[1] or dx+half>=segment.shape[0] or dy+half<0 or dx+half<0:continue
                     bit=int(segment[dy+half,dx+half])
-                    px=out[y+dy,x+dx,CHANNEL]
-                    out[y+dy,x+dx,CHANNEL]=(px&~1)|bit
-            meta["keypoints"].append({"pt":[float(kp.pt[0]),float(kp.pt[1])],"size":kp.size,"angle":kp.angle})
+                    px=out[y+dy,x+dx,ch]#choosing random channel colour to avoid single channel attack
+                    out[y+dy,x+dx,ch]=(px&~1)|bit
+            meta["keypoints"].append({"pt":[float(kp.pt[0]),float(kp.pt[1])],"size":kp.size,"angle":kp.angle,'channel':ch})
         base=Path(self.carrier).stem
         img=make_dir(base=base,typ="modified",ext=".png")
         m=make_dir(base=base,typ="meta",ext=".json")
@@ -89,7 +93,6 @@ class Verifier:
         self.meta=json.load(open(meta)) if META_DATA is None else META_DATA;
         self.error_tolerance =error_tolerance 
         self.segment=np.array(self.meta['segment'],np.uint8)
-        self.color_chan=self.meta['channel']    
         self.sift=cv.SIFT_create()
     def verify(self)->Tuple[bool,List[Tuple[int,int]],float]:
         '''
@@ -109,7 +112,7 @@ class Verifier:
             kp=kps[idx]
             x,y=map(int,map(round,kp.pt))
             if x-h<0 or y-h<0 or x+h>=col.shape[1] or y+h>=col.shape[0]:continue
-            patch=(col[y-h:y+h+1,x-h:x+h+1,self.color_chan]&1)
+            patch=(col[y-h:y+h+1,x-h:x+h+1,ref['channel']]&1)
             if np.count_nonzero(patch ^ self.segment)/(SEG_SIZE*SEG_SIZE)>self.error_tolerance : mism.append((x,y))
             src.append(ref_pt)
             dst.append(np.array(kp.pt))
@@ -140,7 +143,7 @@ class Verifier:
             x,y= map(int,map(round,kp.pt))
             if (x-half<0 or y-half<0 or
                 x+half>=col.shape[1] or y+half>=col.shape[0]):continue
-            patch=(col[y-half:y+half+1,x-half:x+half+1,self.color_chan]&1)
+            patch=(col[y-half:y+half+1,x-half:x+half+1,ref['channel']]&1)
             patches.append(patch)
         if not patches:return None
         stack=np.stack(patches,axis=0)
@@ -167,7 +170,7 @@ class Detector:
         '''
         auth,mism,inl=Verifier(self.suspect,self.meta).verify()
         overlay_path=""
-        if mism and not auth:
+        if mism:
             img=cv.imread(self.suspect)
             [cv.circle(img,(x,y),8,(0,0,255),2) for x,y in mism]
             base=Path(self.suspect).stem
