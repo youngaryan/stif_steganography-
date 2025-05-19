@@ -1,6 +1,6 @@
-# cv2
+#cv2, img processing
 opencv-python
-
-matplotlib
-
+# efficent mathematic operation
 numpy
+#Python Imaging Library(used for displaying image in gui)
+Pillow
