@@ -112,12 +112,12 @@ Once ran you will see a simple GUI which from there using provided buttons you c
 **Verify Image:**
 1. Select a suspected image (`.png` or `.tiff`).
 2. Select the metadata file
+    - If the image is verified the program return autnticated.
+    - Otherwise will return Tempered and the Inliers value [0,1]
 
 <p float="left">
-  <img src="https://github.com/user-attachments/assets/f4d859b1-d89c-4119-b1d4-c6005119a380" width="45%" />
-  <img src="https://github.com/user-attachments/assets/ba0106da-b515-4bd8-b13e-d2e7fbd8460c" width="45%", height="10%" />
+  <img src="https://github.com/user-attachments/assets/f4d859b1-d89c-4119-b1d4-c6005119a380", width="45%" />,
+  <img src="https://github.com/user-attachments/assets/dfe1eac1-312c-434f-8a3f-92ff1579e742", width="45%" />
 </p>
-
-
 
 
