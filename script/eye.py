@@ -167,7 +167,7 @@ class Detector:
         '''
         auth,mism,inl=Verifier(self.suspect,self.meta).verify()
         overlay_path=""
-        if mism:
+        if mism and not auth:
             img=cv.imread(self.suspect)
             [cv.circle(img,(x,y),8,(0,0,255),2) for x,y in mism]
             base=Path(self.suspect).stem
