@@ -1,7 +1,7 @@
 """
 eye.py — COM31006 - Aryan Golbaghi
 ##################################################
-Embed 9x9 binary segment at non-overlapping SIFT points (blue channel LSB).
+Embed 9x9 binary segment (could be changed via gui) at non-overlapping SIFT points (blue channel LSB).
 Verify bit-pattern & homography;
 Detect tamper + overlay image.
 *Simple Tk GUI.
@@ -18,7 +18,7 @@ import tkinter as tk
 from tkinter import filedialog,messagebox,ttk
 from PIL import Image,ImageTk
 ###Golbal VArables###
-SEG_SIZE=9 #segment size for the watermark
+DEFAULT_SEG_SIZE=9 #segment size for the watermark
 FLANN_INDEX_KDTREE=1 #opencv code for kd-tree in FLANN
 #### HELPER FUNCTIONS####
 def make_dir(path_n_fldr:str="res",base:str="che",typ="modifed",ext:str=".png")->str:
@@ -37,7 +37,7 @@ def binarise(img: np.ndarray)->np.ndarray:
 ###Embeder class####
 class Embedder:
     '''embeds a watermark into a carrier image.'''
-    def __init__(self,carrier:str,watermark:str,max_pts:int=400,seg_size:int=SEG_SIZE):
+    def __init__(self,carrier:str,watermark:str,max_pts:int=400,seg_size:int=DEFAULT_SEG_SIZE):
         self.carrier=carrier
         self.watermark=watermark
         self.max=max_pts
@@ -227,7 +227,7 @@ class InterFace:
         prv.rowconfigure(0,  weight=1)
         for text,fun in [('Embed',self.embed),('Verify',self.verify),('Detect',self.detect),('Recover',self.recover)]:
             ttk.Button(root,text=text,width=20,command=fun,).pack(padx=65,side=tk.LEFT,)
-        self.seg_var=tk.IntVar(value=SEG_SIZE)
+        self.seg_var=tk.IntVar(value=DEFAULT_SEG_SIZE)
         seg_frame=tk.Frame(self.root)
         seg_frame.pack(pady=10)
 
