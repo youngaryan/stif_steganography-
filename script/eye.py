@@ -18,8 +18,7 @@ import tkinter as tk
 from tkinter import filedialog,messagebox,ttk
 from PIL import Image,ImageTk
 ###Golbal VArables###
-SEG_SIZE=9
-META_DATA=None #to store metadata if none will load json
+SEG_SIZE=9 #segment size for the watermark
 #### HELPER FUNCTIONS####
 def make_dir(path_n_fldr:str="res",base:str="che",typ="modifed",ext:str=".png")->str:
     '''
@@ -82,18 +81,17 @@ class Embedder:
         m=make_dir(base=base,typ="meta",ext=".json")
         cv.imwrite(img,out)
         json.dump(meta,open(m,'w'),indent=2)
-        global META_DATA
-        META_DATA=meta
         return {"img":img,"meta":m}
 ###Verifier class####
 class Verifier:
     '''verify suspected carrier image of carrying a watermark '''
     def __init__(self,suspect:str,meta:str,error_tolerance :float=0.1):
         self.suspect=suspect
-        self.meta=json.load(open(meta)) if META_DATA is None else META_DATA;
+        self.meta=json.load(open(meta));
         self.error_tolerance =error_tolerance 
         self.segment=np.array(self.meta['segment'],np.uint8)
         self.sift=cv.SIFT_create()
+        self._auth_result=None
     def verify(self)->Tuple[bool,List[Tuple[int,int]],float]:
         '''
         check how many embedded watermark segments match the original bits.
@@ -120,13 +118,15 @@ class Verifier:
         if len(src)>=4:
             _,mask=cv.findHomography(np.array(src),np.array(dst),cv.RANSAC,ransacReprojThreshold=5.0)
             if mask is not None: inl=mask.sum()/mask.size
-        auth=len(mism)<=int(len(src)*self.error_tolerance ) and inl>0.6
-        return auth,mism,inl
+        self._auth_result=len(mism)<=int(len(src)*self.error_tolerance ) and inl>0.6
+        return self._auth_result,mism,inl
     def extract_watermark(self, upscale: bool = True) -> np.ndarray | None:
         """
         reconstruct the embedded 5x5 watermark pattern by majority-voting
         across all matched key-points.
         """
+        if self._auth_result is None:self.verify()
+        if not self._auth_result:raise RuntimeError(f"{self.suspect} is not verifed to have the specific watermark asosiated with the chosen metadata.")
         col=cv.imread(self.suspect)
         if col is None:
             raise FileNotFoundError(self.suspect)
@@ -198,13 +198,13 @@ class InterFace:
         prv.columnconfigure(1, weight=1)
         prv.rowconfigure(0,  weight=1)
         for text,fun in [('Embed',self.embed),('Verify',self.verify),('Detect',self.detect),('Recover',self.recover)]:
-            ttk.Button(root,text=text,width=20,command=fun,).pack(padx=45,side=tk.LEFT,)
+            ttk.Button(root,text=text,width=20,command=fun,).pack(padx=65,side=tk.LEFT,)
     def pick(self,title,typ='Image'):
         path=filedialog.askopenfilename(title=title,filetypes=[(f'{typ} files','*.png;*.tif')]) #only tif and png files are allowed
         if path and typ=='Image':self._show_image(path,type='in')
         return path
     def meta(self):
-        return filedialog.askopenfilename(title='Meta JSON',filetypes=[('JSON','*.json')]) if META_DATA is None else META_DATA #use json if metatdata is not preseverd in the memory
+        return filedialog.askopenfilename(title='Meta JSON',filetypes=[('JSON','*.json')])
     def embed(self):
         carrier=self.pick('Carrier')
         watermark=self.pick('Watermark')#
@@ -215,10 +215,10 @@ class InterFace:
                 self.set_progress(60,"Watermark embedded...")
                 self._show_image(emb['img'],type='out')
                 self.set_progress(100,"Completed.")
-                self.root.after(1000,lambda:self.set_progress(0))
                 messagebox.showinfo('Embed',f"Watermarked: {emb['img']}\nMeta: {emb['meta']}")
             except Exception as e:
                 messagebox.showerror('Error',str(e))
+            self.root.after(1000,lambda:self.set_progress(0))
     def verify(self):
         sus=self.pick('Suspect')
         meta=self.meta()
@@ -227,10 +227,10 @@ class InterFace:
                 self.set_progress(20,"Starting verifying...")
                 auth,_,inl=Verifier(sus,meta).verify()
                 self.set_progress(100,"Verification complete.")
-                self.root.after(1000,lambda:self.set_progress(0))
                 messagebox.showinfo('Verify','AUTHENTIC' if auth else 'TAMPERED'+f"\nInliers:{inl:.2f}")
             except Exception as e:
                 messagebox.showerror('Error',str(e))
+            self.root.after(1000,lambda:self.set_progress(0))
     def detect(self):
         sus=self.pick('Suspect')
         meta=self.meta()
@@ -241,10 +241,10 @@ class InterFace:
                 self.set_progress(80,"Rendering overlay...")
                 self._show_image(res['overlay'],type='out')
                 self.set_progress(100,"Detection complete.")
-                self.root.after(1000,lambda:self.set_progress(0))
                 messagebox.showinfo('Detect',json.dumps(res,indent=2))
             except Exception as e:
                 messagebox.showerror('Error',str(e))
+            self.root.after(1000,lambda:self.set_progress(0))
     def recover(self):
         sus=self.pick('Suspect')
         meta=self.meta()
@@ -261,11 +261,11 @@ class InterFace:
                 tmp=make_dir(base=base,typ="recovered_wm",ext=".png")
                 cv.imwrite(str(tmp),wm)
                 self.set_progress(100, "Watermark recovered.")
-                self.root.after(1000, lambda: self.set_progress(0))
                 self._show_image(str(tmp),type='out')
                 messagebox.showinfo('Recover',f"Recovered watermark saved to:\n{tmp}")
             except Exception as e:
                 messagebox.showerror('Error',str(e))
+            self.root.after(1000, lambda: self.set_progress(0))
     def _show_image(self,src:str,type:str='in')->None:
         try:
             img=Image.open(src)
