@@ -113,11 +113,24 @@ Once ran you will see a simple GUI which from there using provided buttons you c
 1. Select a suspected image (`.png` or `.tiff`).
 2. Select the metadata file
     - If the image is verified the program return autnticated.
-    - Otherwise will return Tempered and the Inliers value [0,1]
+    - Otherwise will return Tempered and the Inliers value [0,1].
 
 <p float="left">
-  <img src="https://github.com/user-attachments/assets/f4d859b1-d89c-4119-b1d4-c6005119a380", width="45%" />,
-  <img src="https://github.com/user-attachments/assets/dfe1eac1-312c-434f-8a3f-92ff1579e742", width="45%" />
+  <img src="https://github.com/user-attachments/assets/f4d859b1-d89c-4119-b1d4-c6005119a380" width="300" height="200" />
+  <img src="https://github.com/user-attachments/assets/dfe1eac1-312c-434f-8a3f-92ff1579e742" width="300" height="200" />
+</p>
+
+
+**Temper Detectore:**
+1. Select a suspected image (`.png` or `.tiff`).
+2. Select the metadata file
+    - If the image is tempered the program return Fasle along with the number of mismatches, Inliers value [0,1], and the path it has stored the overlay image.
+    - Otherwise will return True and the number of mismatches, Inliers value [0,1], and the path it has stored the overlay image.
+3. The program will generate:
+   - A overlay image which has red circle around mismatch points: `res/<name>_overlay.png`
+<p float="left">
+  <img src="https://github.com/user-attachments/assets/b6ae53b7-9df2-4ceb-b24e-4d67fc8ec86a" width="300" height="200" />
+  <img src="https://github.com/user-attachments/assets/6a87e155-0256-495f-aab4-90c40c483c3a" width="300" height="200" />
 </p>
 
 
