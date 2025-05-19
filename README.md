@@ -133,4 +133,13 @@ Once ran you will see a simple GUI which from there using provided buttons you c
   <img src="https://github.com/user-attachments/assets/6a87e155-0256-495f-aab4-90c40c483c3a" width="300" height="200" />
 </p>
 
+**Recover Watermark Image:**
+1. Select a suspected image (`.png` or `.tiff`).
+2. Select the metadata file
+    - If the image is verified, the program will return the path of the recovered image.
+    - Otherwise will error.
+<p float="left">
+  <img src="https://github.com/user-attachments/assets/b1f5dd1a-a58d-4d1d-8201-8524abbbc816" width="400" height="200" />
+  <img src="https://github.com/user-attachments/assets/16a0f642-c325-46d7-8039-951c87e0e031" width="400" height="200" />
+</p>
 
