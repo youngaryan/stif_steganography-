@@ -19,8 +19,10 @@ class Detector:
     def __init__(self,suspect:str,meta:str):
         self.suspect=suspect
         self.meta=meta
+    
     def detect(self)->Dict[str,Any]:
         '''
+        overlays images with red circles for thier mismatches positions
         returns:
         tampered":not auth,
         "mismatches":len(mism)
@@ -29,10 +31,12 @@ class Detector:
         '''
         auth,mism,inl=Verifier(self.suspect,self.meta).verify()
         overlay_path=""
+        
         if len(mism)>0:
             img=cv.imread(self.suspect)
             [cv.circle(img,(x,y),8,(0,0,255),2) for x,y in mism]
             base=Path(self.suspect).stem
             overlay_path=make_dir(base=base,typ="overlay",ext=".png")
             cv.imwrite(str(overlay_path),img)
+        
         return {"tampered":not auth,"mismatches":len(mism),"inlier":round(inl,3),"overlay":str(overlay_path)}

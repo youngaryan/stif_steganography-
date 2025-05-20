@@ -18,8 +18,10 @@ def make_dir(path_n_fldr:str="res",base:str="che",typ:str="modifed",ext:str=".pn
     ndir=Path(path_n_fldr)
     ndir.mkdir(exist_ok=True)
     file_name=f"{base}_{typ}{ext}"
+    
     return str(ndir/file_name)
 
 def binarise(img: np.ndarray)->np.ndarray:
     '''convert a grayscale image to black and white'''
+    
     return (img>127).astype(np.uint8)
