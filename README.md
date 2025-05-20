@@ -35,7 +35,7 @@ The watermark is embedded in the **(LSBs)** of a **random channel** at **non-ove
 - Convert watermark image to 9x9 binary.
 - Detect strong SIFT keypoints in carrier image.
 - For each selected keypoint:
-  - Embed the watermark in a square patch (centered on the keypoint) into the **LSB of the blue channel**.
+  - Embed the watermark in a square patch (centered on the keypoint) into the **LSB of reandom channels**.
 - Save:
   - Modified image
   - Metadata (`.json`) including SIFT points(x,y positions, size and angles) and watermark segment.
