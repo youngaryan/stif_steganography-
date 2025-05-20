@@ -8,7 +8,7 @@ Detect tamper + overlay image.
 """
 import tkinter as tk
 
-from ui import InterFace
+from script.ui import InterFace
 
 ###MAIN class####
 if __name__=='__main__':

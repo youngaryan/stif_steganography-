@@ -15,10 +15,10 @@ import tkinter as tk
 from tkinter import filedialog,messagebox,ttk
 from PIL import Image,ImageTk
 
-from embed import Embedder
-from verify import Verifier
-from detecor import Detector
-from helper import make_dir
+from script.embed import Embedder
+from script.verify import Verifier
+from script.detecor import Detector
+from script.helper import make_dir
 
 
 ###Golbal VArables###

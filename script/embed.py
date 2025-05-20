@@ -14,7 +14,7 @@ from typing import List, Tuple, Dict
 import json
 from pathlib import Path
 
-from helper import binarise, make_dir
+from script.helper import binarise, make_dir
 
 
 ###Embeder class####

@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Dict, Any
 import cv2 as cv
 
-from verify import Verifier
-from helper import make_dir
+from script.verify import Verifier
+from script.helper import make_dir
 
 ###Detector class####
 class Detector:
