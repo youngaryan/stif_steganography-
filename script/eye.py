@@ -147,7 +147,7 @@ class Verifier:
             inl=mask.sum()/mask.size if mask is not None else 0
         self._auth_result=len(mism)<=int(len(src)*self.error_tolerance ) and inl>0.6
         return self._auth_result,mism,inl
-    def extract_watermark(self, upscale: bool = True) -> np.ndarray|None:
+    def extract_watermark(self) -> np.ndarray|None:
         """
         reconstruct the embedded 9x9 watermark pattern by majority-voting
         across all matched key-points.
@@ -177,7 +177,7 @@ class Verifier:
         stack=np.stack(patches,axis=0)
         votes=(stack.sum(axis=0)>(len(patches)/2))
         recovered=votes.astype(np.uint8)*255
-        if upscale:
+        if self.seg_size<20:
             recovered=cv.resize(recovered,(self.seg_size*3,self.seg_size*3),cv.INTER_NEAREST)
         return recovered
 ###Detector class####
@@ -291,7 +291,7 @@ class InterFace:
         try:
             self.set_progress(10,"Recovering watermark...")
             ver=Verifier(sus,meta)
-            wm=ver.extract_watermark(upscale=True)
+            wm=ver.extract_watermark()
             if wm is None:
                 self.set_progress(0)    
                 messagebox.showwarning('Recover','No watermark patches could be recovered.')
