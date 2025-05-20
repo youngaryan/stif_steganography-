@@ -83,7 +83,7 @@ class InterFace:
             self.set_progress(20,"Starting verifying...")
             auth,_,inl=Verifier(sus,meta).verify()
             self.set_progress(100,"Verification complete.")
-            messagebox.showinfo('Verify','AUTHENTIC' if auth else 'TAMPERED'+f"\nInliers:{inl:.2f}")
+            messagebox.showinfo('Verify','YES' if auth else "NO")
         except Exception as e:
             messagebox.showerror('Error',str(e))
         self.root.after(1000,lambda:self.set_progress(0))

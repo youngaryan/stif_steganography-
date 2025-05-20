@@ -20,7 +20,7 @@ from script.helper import binarise, make_dir
 ###Embeder class####
 class Embedder:
     '''embeds a watermark into a carrier image.'''
-    def __init__(self,carrier:str,watermark:str,max_pts:int=400,seg_size:int=9):
+    def __init__(self,carrier:str,watermark:str,max_pts:int=200,seg_size:int=9):
         self.carrier=carrier
         self.watermark=watermark
         self.max=max_pts
