@@ -51,6 +51,7 @@ class Verifier:
         check how many embedded watermark segments match the original bits.
         calculate how well the image has been geometrically preserved, e.g > 60% is ok.
         decide whether the watermark is still valid or likely tampered with.
+        if no refefrence point is found will return tmepered true, mismatche=-1, and inl=-1
         '''
         col=cv.imread(self.suspect)
         if col is None:raise FileNotFoundError(self.suspect)
@@ -85,6 +86,7 @@ class Verifier:
         if len(src)>=4:
             _,mask=cv.findHomography(np.array(src),np.array(dst),cv.RANSAC,ransacReprojThreshold=5.0)
             inl=mask.sum()/mask.size if mask is not None else 0
+        elif len(src)==0:return True,-1,-1
         self._auth_result=len(mism)<=int(len(src)*self.error_tolerance ) and inl>0.6
         
         return self._auth_result,mism,inl
