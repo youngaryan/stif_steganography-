@@ -2,7 +2,7 @@
 
 **Author:** Aryan Golbaghi  
 **Module:** COM31006 — Image-to-Image Steganography for Watermark Creation
-**Purpose:** This project demonstrates image watermark embedding, verification, tamper detection, and recovery using non-overlapping SIFT keypoints and altering the least significant bit (LSBs) steganography.
+**Purpose:** This project demonstrates image watermark embedding, verification, tamper detection, and recovery using topn N non-overlapping SIFT keypoints and altering the least significant bit (LSBs) steganography.
 
 ---
 
