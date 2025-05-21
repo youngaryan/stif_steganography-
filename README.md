@@ -103,11 +103,16 @@ pip install -r requirements.txt
 ```bash
 stif_steganography-/
 ├── script/
-│   ├── eye.py  #brain of the program
+│   ├── detecor.py
+│   ├── embed.py
+│   ├── helper.py
+│   ├── ui.py
+│   ├── verify.py
 ├── images/  #sample carrier and watermark image
 │   ├── che.png
 │   ├── watermark.png
 ├── res/  #folder which the genrated data(images and metadata) will be stored at
+├── eye.py  #brain of the program
 ├── requirements.txt
 ├── .gitignore
 └── README.md
