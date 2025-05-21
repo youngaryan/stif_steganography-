@@ -69,12 +69,34 @@ The GUI also includes progress feedback and real-time image previews.
 ---
 
 ## Requirements
+Before running the project, it's recommended to set up a virtual environment to avoid dependency conflicts:
 
-Install dependencies (opencv-python, numpy, Pillow):
+1. **Create the environment** (e.g., `cv_env`):
+   ```bash
+   python -m venv cv_env
+   ```
+2. **Activate it:**
+
+   - On **Windows**:
+     ```bash
+     cv_env\Scripts\activate
+     ```
+
+   - On **macOS/Linux**:
+     ```bash
+     source cv_env/bin/activate
+     ```
+
+
+
+3. **Install dependencies (opencv-python, numpy, Pillow):**
 ```bash
 pip install -r requirements.txt
 ```
-
+4. **Run the project:**
+```bash
+ python eye.py
+```
 ---
 ## Project File Structure
 
