@@ -4,6 +4,11 @@
 **Module:** COM31006 — Image-to-Image Steganography for Watermark Creation
 **Purpose:** This project demonstrates image watermark embedding, verification, tamper detection, and recovery using topn N non-overlapping SIFT keypoints and altering the least significant bit (LSBs) steganography.
 
+
+**Video Description:** 
+
+[![Video Description](https://img.youtube.com/vi/EZfF1awYP58/0.jpg)](https://www.youtube.com/watch?v=EZfF1awYP58)
+
 ---
 
 ## Overview
