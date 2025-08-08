@@ -5,10 +5,6 @@
 **Purpose:** This project demonstrates image watermark embedding, verification, tamper detection, and recovery using topn N non-overlapping SIFT keypoints and altering the least significant bit (LSBs) steganography.
 
 
-**Video Description:** 
-
-[![Video Description](https://img.youtube.com/vi/EZfF1awYP58/0.jpg)](https://www.youtube.com/watch?v=EZfF1awYP58)
-
 ---
 
 ## Overview
@@ -132,8 +128,6 @@ python eye.py
 
 Once ran you will see a simple GUI which from there using provided buttons you can embed a watermark inside a carrier image, verify, detect temperments, or recover a watermark.
 
-![image](https://github.com/user-attachments/assets/2e16ca4f-3f1e-42ee-aafa-d53750b687d3)
-
 
 **Embed Watermark:**
 
@@ -149,10 +143,7 @@ Once ran you will see a simple GUI which from there using provided buttons you c
     - If the image is verified the program return autnticated.
     - Otherwise will return Tempered and the Inliers value [0,1].
 
-<p float="left">
-  <img src="https://github.com/user-attachments/assets/7666486e-5c74-4c66-8536-60f4d6950c83" width="700" height="400" />
-  <img src="https://github.com/user-attachments/assets/f245e957-c1ed-482f-a551-58c9f5d1b051" width="700" height="400" />
-</p>
+
 
 **Temper Detectore:**
 1. Select a suspected image (`.png` or `.tiff`).
@@ -161,18 +152,12 @@ Once ran you will see a simple GUI which from there using provided buttons you c
     - Otherwise will return True and the number of mismatches, Inliers value [0,1], and the path it has stored the overlay image.
 3. The program will generate:
    - A overlay image which has red circle around mismatch points: `res/<name>_overlay.png`
-<p float="left">
-  <img src="https://github.com/user-attachments/assets/a9568c87-6cae-4305-8cba-e8aea381a7e1" width="700" height="500" />
-  <img src="https://github.com/user-attachments/assets/1d54cf49-8523-4965-8fe2-f217b836d80b" width="700" height="500" />
-</p>
+
 
 **Recover Watermark Image:**
 1. Select a suspected image (`.png` or `.tiff`).
 2. Select the metadata file
     - If the image is verified, the program will return the path of the recovered image.
     - Otherwise will raise an error.
-<p float="left">
-  <img src="https://github.com/user-attachments/assets/86e38e8c-6f30-4aef-ac04-adb0bd21420a" width="400" height="200" />
-  <img src="https://github.com/user-attachments/assets/e19f1c8b-9249-4e42-8bcb-a98e3a700ee7" width="400" height="200" />
-</p>
+
 
